@@ -2,8 +2,10 @@ use bytes::BytesMut;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;
 
+use crate::result::Result;
+
 #[tokio::main]
-pub async fn start() -> Result<(), Box<dyn std::error::Error + Send + Sync>>{
+pub async fn start() -> Result<()>{
     let port: u16 = 8820;
     let listener = TcpListener::bind(&format!("127.0.0.1:{}", port)).await?;
     println!("Listening to port: {}", port);
