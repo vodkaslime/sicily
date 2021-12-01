@@ -1,3 +1,4 @@
+use pnet::datalink;
 use structopt::StructOpt;
 
 use crate::constants::*;
@@ -21,6 +22,13 @@ struct Params {
         about = "Port of the sicily server."
     )]
     pub port: Option<u16>,
+
+    #[structopt(
+        name = "host identifier",
+        long = "--host",
+        about = "Host identifier of this sicily node."
+    )]
+    pub host: Option<String>,
 
     #[structopt(
         name = "input buffer size",
@@ -50,9 +58,24 @@ struct Params {
 #[derive(Debug)]
 pub struct Config {
     pub port: u16,
+    pub host: String,
     pub input_buffer_size: usize,
     pub id_bits: u8,
     pub virtual_node_number: u8,
+}
+
+fn parse_local_ip() -> Result<String> {
+    for iface in datalink::interfaces() {
+        for ip in iface.ips {
+            if ip.is_ipv4() {
+                let addr = ip.ip().to_string();
+                if addr != "127.0.0.1" {
+                    return Ok(addr);
+                }
+            }
+        }
+    }
+    Err("Cannot parse local IP".into())
 }
 
 pub fn parse_params() -> Result<Config> {
@@ -75,6 +98,14 @@ pub fn parse_params() -> Result<Config> {
         None => INPUT_BUFFER_SIZE
     };
 
+    /* Parse host identifier from input.
+     * If no input, then try to automatically find one. */
+    let host = match params.host {
+        Some(host) => host,
+        None => parse_local_ip()?
+    };
+
+    /* Parse identifier bits. */
     let id_bits = match params.id_bits {
         Some(id_bits) => {
             if id_bits < 8 {
@@ -100,6 +131,7 @@ pub fn parse_params() -> Result<Config> {
     };
     let config = Config {
         port,
+        host,
         input_buffer_size,
         id_bits,
         virtual_node_number,

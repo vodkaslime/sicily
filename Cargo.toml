@@ -10,3 +10,4 @@ edition = "2018"
 bytes = "1.0"
 tokio = { version = "1", features = ["full"] }
 structopt = "0.3"
+pnet = "0.28.0"
