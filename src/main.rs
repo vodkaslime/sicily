@@ -1,11 +1,16 @@
+extern crate sicily;
 
-pub mod config;
-pub mod constants;
-pub mod result;
-pub mod server;
+use pretty_env_logger;
+
+use sicily::result;
+use sicily::node;
+use sicily::config;
+use sicily::server;
+
 
 fn main() -> result::Result<()>{
+    pretty_env_logger::init();
     let config = config::parse_params()?;
-    println!("The config is {:?}", config);
-    server::start(&config)
+    let node_list = node::NodeList::new(&config);
+    server::start(&config, node_list)
 }
