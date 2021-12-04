@@ -2,20 +2,20 @@ use crate::location::Location;
 
 #[derive(Debug)]
 pub enum Request {
-    Get{
+    Lookup {
         key: String,
     },
-    Join{
+    Join {
         location: Location,
     },
 }
 
 #[derive(Debug)]
 pub enum Response {
-    Get{
+    Lookup {
         location: Location,
     },
-    Join{
+    Join {
         location: Location,
     },
 }

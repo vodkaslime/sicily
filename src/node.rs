@@ -5,7 +5,7 @@ pub struct Node {
     location: Location,
     predecessor: Option<Location>,
     successor: Option<Location>,
-    finger_table: Vec<Option<Location>>,
+    finger: Vec<Option<Location>>,
 }
 
 impl Node {
@@ -15,16 +15,16 @@ impl Node {
     ) -> Self {
         let location = Location::new(config, virtual_node_id);
 
-        let mut finger_table: Vec<Option<Location>> = Vec::new();
+        let mut finger: Vec<Option<Location>> = Vec::new();
         for _ in 0..config.id_bits {
-            finger_table.push(None);
+            finger.push(None);
         }
 
         return Self {
             location,
             predecessor: None,
             successor: None,
-            finger_table: Vec::new(),
+            finger: Vec::new(),
         }
     }
 }

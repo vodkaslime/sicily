@@ -15,30 +15,24 @@ pub async fn start(config: &Config, node_list: NodeList) -> Result<()>{
     log::info!("Listening to port: {}", config.port);
     let input_buffer_size = config.input_buffer_size;
     loop {
-        match listener.accept().await {
-            Ok((mut stream, _)) => {
-                log::info!("A new client connected.");
-                tokio::spawn(async move {
-                    loop {
-                        let mut buf = BytesMut::with_capacity(input_buffer_size);
-                        let n = stream.read_buf(&mut buf).await.unwrap();
-                        if n == 0 {
-                            log::info!("Client disconnected.");
-                            return;
-                        }
-                        match process_request(&buf) {
-                            Ok(()) => {},
-                            Err(err) => {
-                                log::error!("Could not process request: {}", err);
-                            }
-                        };
+        let (mut stream, _) = listener.accept().await?;
+        log::info!("A new client connected.");
+        tokio::spawn(async move {
+            loop {
+                let mut buf = BytesMut::with_capacity(input_buffer_size);
+                let n = stream.read_buf(&mut buf).await.unwrap();
+                if n == 0 {
+                    log::info!("Client disconnected.");
+                    return;
+                }
+                match process_request(&buf) {
+                    Ok(()) => {},
+                    Err(err) => {
+                        log::error!("Could not process request: {}", err);
                     }
-                });
-            },
-            Err(err) => {
-                return Err(err.into());
+                };
             }
-        }
+        });
     }
 }
 
@@ -58,14 +52,14 @@ fn process_request(buf: &BytesMut) -> Result<()> {
     if arr.len() <= 1 {
         return Err("Invalid command. More than one parameter required.".into());
     }
-    let command = match arr[0] {
-        "GET" => {
-            Request::Get {
+    let command = match arr[0].to_lowercase().as_str() {
+        "lookup" => {
+            Request::Lookup {
                 key: arr[1].to_string()
             }
         },
 
-        "JOIN" => {
+        "join" => {
             Request::Join {
                 location: Location::from_string(arr[1].to_string())?,
             }
