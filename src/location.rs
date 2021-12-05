@@ -1,7 +1,7 @@
 use num::bigint::BigUint;
 
+use crate::arithmetic;
 use crate::config::Config;
-use crate::hash;
 use crate::result::Result;
 
 #[derive(Clone, Debug)]
@@ -20,7 +20,7 @@ impl Location {
         let ip = config.host.clone();
         let port = config.port;
         let id_input = format!("{}:{}:{}", &ip, port, virtual_node_id);
-        let identifier = hash::digest(&id_input);
+        let identifier = arithmetic::hash(&id_input);
         return Self {
             ip,
             port,
@@ -44,7 +44,7 @@ impl Location {
         } else {
             virtual_node_id = arr[2].parse::<u8>()?;
         }
-        let identifier = hash::digest(&id_input);
+        let identifier = arithmetic::hash(&id_input);
         Ok(Self {
             ip,
             port,
