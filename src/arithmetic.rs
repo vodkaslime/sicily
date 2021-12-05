@@ -8,6 +8,10 @@ pub fn hash(input: &String) -> BigUint {
     BigUint::from_bytes_be(&arr)
 }
 
+/* Given a target n,
+ * a left_border: tuple(left, left_inclusive),
+ * a right_border: tuple(right, right_inclusive),
+ * return whether the target n in in the range defined by left_border and right_border. */
 pub fn is_in_range(
     n: &BigUint,
     left_border: (&BigUint, bool),
@@ -44,7 +48,13 @@ pub fn is_in_range(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num::bigint::BigUint;
+
+    #[test]
+    fn test_hash() {
+        let src = "207.216.57.167:8820:6".to_string();
+        let expected_hash = "73983030965240321521725464828347026369133146436118419434250862939976471883122";
+        assert_eq!(format!("{}", hash(&src)), expected_hash);
+    }
 
     #[test]
     fn test_is_in_range_left_smaller_than_right() {
