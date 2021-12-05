@@ -53,7 +53,7 @@ impl Node {
 
 #[derive(Debug)]
 pub struct NodeList {
-    node_list: Vec<Mutex<Node>>,
+    pub node_list: Vec<Mutex<Node>>,
 }
 
 impl NodeList {

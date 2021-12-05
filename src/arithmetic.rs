@@ -15,7 +15,7 @@ pub fn hash(input: &String) -> BigUint {
 pub fn is_in_range(
     n: &BigUint,
     left_border: (&BigUint, bool),
-    right_border: (&BigUint, bool)
+    right_border: (&BigUint, bool),
 ) -> bool {
     let (left, left_inclusive) = left_border;
     let (right, right_inclusive) = right_border;
@@ -37,11 +37,8 @@ pub fn is_in_range(
             left_condition || right_condition
         }
     } else {
-        if left_inclusive && right_inclusive && n == left {
-            return true
-        } else {
-            return false
-        }
+        /* When left == right, we assume they encompass the entire ring. */
+        true
     }
 }
 
@@ -193,11 +190,7 @@ mod tests {
                     (&left, *left_inclusive),
                     (&right, *right_inclusive),
                 );
-                if *left_inclusive && *right_inclusive {
-                    assert_eq!(res, true);
-                } else {
-                    assert_eq!(res, false);
-                }
+                assert_eq!(res, true);
             }
         }
 
@@ -209,7 +202,7 @@ mod tests {
                     (&left, *left_inclusive),
                     (&right, *right_inclusive),
                 );
-                assert_eq!(res, false);
+                assert_eq!(res, true);
             }
         }
 
@@ -221,7 +214,7 @@ mod tests {
                     (&left, *left_inclusive),
                     (&right, *right_inclusive),
                 );
-                assert_eq!(res, false);
+                assert_eq!(res, true);
             }
         }
     }
