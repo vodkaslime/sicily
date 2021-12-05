@@ -3,7 +3,7 @@ pub mod command;
 pub mod config;
 pub mod constants;
 pub mod location;
+pub mod network;
 pub mod node;
 pub mod process;
 pub mod utils;
-pub mod server;

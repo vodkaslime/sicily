@@ -3,7 +3,7 @@ use num::bigint::BigUint;
 use crate::arithmetic;
 use crate::location::Location;
 
-pub fn find_successor(location: &Location, id: &BigUint) -> Location {
+pub async fn find_successor(location: &Location, id: &BigUint) -> Location {
     let pred = find_predecessor(location, id);
     return get_successor(&pred);
 }

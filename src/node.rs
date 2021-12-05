@@ -7,10 +7,10 @@ use crate::location::Location;
 
 #[derive(Debug)]
 pub struct Node {
-    location: Location,
-    predecessor: Location,
-    successor: Location,
-    finger: Vec<Location>,
+    pub location: Location,
+    pub predecessor: Location,
+    pub successor: Location,
+    pub finger: Vec<Location>,
 }
 
 impl Node {

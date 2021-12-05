@@ -1,6 +1,9 @@
 use num::bigint::BigUint;
 use sha2::{ Sha256, Digest };
 
+/*
+ * Given a string, hash it with SHA256 into a big unit.
+ */
 pub fn hash(input: &String) -> BigUint {
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
@@ -8,10 +11,12 @@ pub fn hash(input: &String) -> BigUint {
     BigUint::from_bytes_be(&arr)
 }
 
-/* Given a target n,
+/* 
+ * Given a target n,
  * a left_border: tuple(left, left_inclusive),
  * a right_border: tuple(right, right_inclusive),
- * return whether the target n in in the range defined by left_border and right_border. */
+ * return whether the target n in in the range defined by left_border and right_border.
+ */
 pub fn is_in_range(
     n: &BigUint,
     left_border: (&BigUint, bool),
