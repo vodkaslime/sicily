@@ -2,7 +2,7 @@ use pnet::datalink;
 use structopt::StructOpt;
 
 use crate::constants::*;
-use crate::result::Result;
+use crate::utils::Result;
 
 /*
  * The Params struct is to gather params input given by commandline

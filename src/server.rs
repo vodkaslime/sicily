@@ -9,7 +9,7 @@ use crate::command::{ Request };
 use crate::config::Config;
 use crate::location::Location;
 use crate::node::NodeList;
-use crate::result::Result;
+use crate::utils::Result;
 
 #[tokio::main]
 pub async fn start(config: &Config, node_list: Arc<NodeList>) -> Result<()>{

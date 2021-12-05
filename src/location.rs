@@ -2,7 +2,7 @@ use num::bigint::BigUint;
 
 use crate::arithmetic;
 use crate::config::Config;
-use crate::result::Result;
+use crate::utils::Result;
 
 #[derive(Clone, Debug)]
 pub struct Location {
