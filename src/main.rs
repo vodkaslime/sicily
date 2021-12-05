@@ -7,7 +7,6 @@ use sicily::node;
 use sicily::config;
 use sicily::server;
 
-
 fn main() -> result::Result<()>{
     pretty_env_logger::init();
     let config = config::parse_params()?;

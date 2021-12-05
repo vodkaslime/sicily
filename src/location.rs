@@ -1,11 +1,15 @@
+use num::bigint::BigUint;
+
 use crate::config::Config;
+use crate::hash;
 use crate::result::Result;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Location {
-    pub ip: String,
-    pub port: u16,
-    pub virtual_node_id: u8,
+    ip: String,
+    port: u16,
+    virtual_node_id: u8,
+    identifier: BigUint,
 }
 
 impl Location {
@@ -13,15 +17,20 @@ impl Location {
         config: &Config,
         virtual_node_id: u8,
     ) -> Self {
+        let ip = config.host.clone();
+        let port = config.port;
+        let id_input = format!("{}:{}:{}", &ip, port, virtual_node_id);
+        let identifier = hash::digest(&id_input);
         return Self {
-            ip: config.host.clone(),
-            port: config.port,
-            virtual_node_id
+            ip,
+            port,
+            virtual_node_id,
+            identifier,
         }
     }
 
-    pub fn from_string(s: String) -> Result<Self> {
-        let arr: Vec<&str> = s.split(":").collect();
+    pub fn from_string(id_input: String) -> Result<Self> {
+        let arr: Vec<&str> = id_input.split(":").collect();
         if arr.len() < 2 || arr.len() > 3 {
             return Err("Invalid number of params for a Join request.".into());
         }
@@ -35,10 +44,12 @@ impl Location {
         } else {
             virtual_node_id = arr[2].parse::<u8>()?;
         }
+        let identifier = hash::digest(&id_input);
         Ok(Self {
             ip,
             port,
-            virtual_node_id
+            virtual_node_id,
+            identifier,
         })
     }
 

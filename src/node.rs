@@ -1,10 +1,11 @@
 use crate::config::Config;
 use crate::location::Location;
 
+#[derive(Clone, Debug)]
 pub struct Node {
     location: Location,
-    predecessor: Option<Location>,
-    successor: Option<Location>,
+    predecessor: Location,
+    successor: Location,
     finger: Vec<Option<Location>>,
 }
 
@@ -14,21 +15,24 @@ impl Node {
         virtual_node_id: u8,
     ) -> Self {
         let location = Location::new(config, virtual_node_id);
+        let predecessor = location.clone();
+        let successor = location.clone();
 
         let mut finger: Vec<Option<Location>> = Vec::new();
         for _ in 0..config.id_bits {
             finger.push(None);
         }
 
-        return Self {
+        Self {
             location,
-            predecessor: None,
-            successor: None,
-            finger: Vec::new(),
+            predecessor,
+            successor,
+            finger,
         }
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct NodeList {
     node_list: Vec<Option<Node>>,
 }
@@ -40,8 +44,8 @@ impl NodeList {
             node_list.push(Some(Node::new(config, i)));
         }
 
-        return Self {
+        Self {
             node_list,
-        };
+        }
     }
 }

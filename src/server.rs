@@ -50,10 +50,17 @@ fn process_request(buf: &BytesMut) -> Result<()> {
     let arr: Vec<&str> = s.split(" ").collect();
 
     if arr.len() <= 1 {
-        return Err("Invalid command. More than one parameter required.".into());
+        return Err(
+            "Invalid command. More than one parameter required."
+            .into());
     }
     let command = match arr[0].to_lowercase().as_str() {
         "lookup" => {
+            if arr.len() != 2 {
+                return Err(
+                    "Invalid command. Lookup command takes only a key as parameter."
+                    .into());
+            }
             Request::Lookup {
                 key: arr[1].to_string()
             }
@@ -65,10 +72,11 @@ fn process_request(buf: &BytesMut) -> Result<()> {
             }
         }
         _ => {
-            return Err("Invalid command.".into());
+            return Err(
+                "Invalid command. Unrecognized command."
+                .into());
         }
     };
 
-    log::info!("The command is: {:?}", command);
     Ok(())
 }
