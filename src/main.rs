@@ -1,6 +1,7 @@
 extern crate sicily;
 
 use pretty_env_logger;
+use std::sync::Arc;
 
 use sicily::result;
 use sicily::node;
@@ -10,6 +11,6 @@ use sicily::server;
 fn main() -> result::Result<()>{
     pretty_env_logger::init();
     let config = config::parse_params()?;
-    let node_list = node::NodeList::new(&config);
+    let node_list = Arc::new(node::NodeList::new(&config));
     server::start(&config, node_list)
 }

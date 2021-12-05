@@ -6,10 +6,10 @@ use crate::result::Result;
 
 #[derive(Clone, Debug)]
 pub struct Location {
-    ip: String,
-    port: u16,
-    virtual_node_id: u8,
-    identifier: BigUint,
+    pub ip: String,
+    pub port: u16,
+    pub virtual_node_id: u8,
+    pub identifier: BigUint,
 }
 
 impl Location {

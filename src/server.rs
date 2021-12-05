@@ -1,5 +1,6 @@
 use bytes::BytesMut;
 use log;
+use std::sync::Arc;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;
 
@@ -10,7 +11,7 @@ use crate::node::NodeList;
 use crate::result::Result;
 
 #[tokio::main]
-pub async fn start(config: &Config, node_list: NodeList) -> Result<()>{
+pub async fn start(config: &Config, node_list: Arc<NodeList>) -> Result<()>{
     let listener = TcpListener::bind(&format!("127.0.0.1:{}", config.port)).await?;
     log::info!("Listening to port: {}", config.port);
     let input_buffer_size = config.input_buffer_size;

@@ -1,12 +1,16 @@
+use num::bigint::BigUint;
+use tokio::sync::Mutex;
+
+use crate::arithmetic;
 use crate::config::Config;
 use crate::location::Location;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Node {
     location: Location,
     predecessor: Location,
     successor: Location,
-    finger: Vec<Option<Location>>,
+    finger: Vec<Location>,
 }
 
 impl Node {
@@ -18,9 +22,9 @@ impl Node {
         let predecessor = location.clone();
         let successor = location.clone();
 
-        let mut finger: Vec<Option<Location>> = Vec::new();
+        let mut finger: Vec<Location> = Vec::new();
         for _ in 0..config.id_bits {
-            finger.push(None);
+            finger.push(location.clone());
         }
 
         Self {
@@ -30,18 +34,33 @@ impl Node {
             finger,
         }
     }
+
+    pub fn closest_preceding_finger(&self, id: BigUint) -> Location {
+        for i in (0..self.finger.len()).rev() {
+            let location = &self.finger[i];
+
+            if arithmetic::is_in_range(
+                &location.identifier,
+                ( &self.location.identifier, false ),
+                ( &id, false ),
+            ) {
+                return location.clone();
+            }
+        }
+        return self.location.clone();
+    }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct NodeList {
-    node_list: Vec<Option<Node>>,
+    node_list: Vec<Mutex<Node>>,
 }
 
 impl NodeList {
     pub fn new(config: &Config) -> Self {
-        let mut node_list: Vec<Option<Node>> = Vec::new();
+        let mut node_list: Vec<Mutex<Node>> = Vec::new();
         for i in 0..config.virtual_node_number {
-            node_list.push(Some(Node::new(config, i)));
+            node_list.push(Mutex::new(Node::new(config, i)));
         }
 
         Self {
