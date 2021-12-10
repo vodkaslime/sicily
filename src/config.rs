@@ -31,11 +31,11 @@ struct Params {
     pub host: Option<String>,
 
     #[structopt(
-        name = "input buffer size",
-        long = "--input-buffer-size",
+        name = "output buffer size",
+        long = "--output-buffer-size",
         about = "Server read buffer size in bytes. Must be larger than 0."
     )]
-    pub input_buffer_size: Option<usize>,
+    pub output_buffer_size: Option<usize>,
 
     #[structopt(
         name = "Identifier bits",
@@ -59,7 +59,7 @@ struct Params {
 pub struct Config {
     pub port: u16,
     pub host: String,
-    pub input_buffer_size: usize,
+    pub output_buffer_size: usize,
     pub id_bits: u8,
     pub virtual_node_number: u8,
 }
@@ -88,14 +88,14 @@ pub fn parse_params() -> Result<Config> {
     };
 
     /* Parse input buffer size. */
-    let input_buffer_size = match params.input_buffer_size {
-        Some(input_buffer_size) => {
-            if input_buffer_size == 0 {
+    let output_buffer_size = match params.output_buffer_size {
+        Some(output_buffer_size) => {
+            if output_buffer_size == 0 {
                 return Err("Input buffer size cannot be 0.".into());
             }
-            input_buffer_size
+            output_buffer_size
         },
-        None => INPUT_BUFFER_SIZE
+        None => OUTPUT_BUFFER_SIZE
     };
 
     /* Parse host identifier from input.
@@ -132,7 +132,7 @@ pub fn parse_params() -> Result<Config> {
     let config = Config {
         port,
         host,
-        input_buffer_size,
+        output_buffer_size,
         id_bits,
         virtual_node_number,
     };

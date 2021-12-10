@@ -1,4 +1,6 @@
 use num::bigint::BigUint;
+use std::net::{ IpAddr, SocketAddr };
+use std::str::FromStr;
 
 use crate::arithmetic;
 use crate::config::Config;
@@ -60,5 +62,10 @@ impl Location {
             self.port,
             self.virtual_node_id
         );
+    }
+
+    pub fn to_addr(&self) -> Result<SocketAddr> {
+        let addr = SocketAddr::new(IpAddr::from_str(&self.ip)?, self.port);
+        Ok(addr)
     }
 }
