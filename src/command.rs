@@ -170,9 +170,9 @@ impl Response {
         let arr: Vec<&str> = s.split(" ").collect();
 
         /* Should have at least two valid string in the array vector after split. */
-        if arr.len() <= 2 {
+        if arr.len() < 2 {
             return Err(
-                "Invalid response. More than two separate strings required."
+                "Invalid response. At least two separate strings required."
                 .into());
         }
 
@@ -327,7 +327,7 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
             }
         },
         Request::Join { virtual_node_id, location } => {
-            membership::join(node_list, virtual_node_id, location).await?;
+            membership::join(virtual_node_id, location, node_list).await?;
             Response::Join
         },
         Request::Lookup { virtual_node_id, key } => {

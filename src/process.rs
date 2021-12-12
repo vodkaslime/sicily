@@ -63,7 +63,7 @@ pub async fn get_predecessor(location: &Location) -> Result<Location> {
     client.send_request(request).await?;
     let response = client.receive().await?;
     let res_location = match response {
-        Response::GetSuccessor { location } => location,
+        Response::GetPredecessor { location } => location,
         _ => {
             return Err(
                 "Error receiving response while doing GETPREDECESSOR. Got unexpected response type."

@@ -14,9 +14,9 @@ use crate::utils::Result;
  * by talking to location, which represents a node that is already in the cluster.
  */
 pub async fn join(
-    node_list: Arc<NodeList>,
     virtual_node_id: u8,
-    location: Location
+    location: Location,
+    node_list: Arc<NodeList>,
 ) -> Result<()> {
 
     /* 1. Retrieve the local identifier of the node. */
@@ -40,7 +40,7 @@ pub async fn join(
 /*
  * Periodic function called to stabilize the metadata of nodes in the cluster.
  */
-pub async fn stablize(node_list: Arc<NodeList>, virtual_node_id: u8) -> Result<()> {
+pub async fn stablize(virtual_node_id: u8, node_list: Arc<NodeList>) -> Result<()> {
     let (mut successor, local_location) = {
         let node = node_list.node_list[virtual_node_id as usize].lock().await;
         let successor = Location::option_to_result(&node.successor)?;
