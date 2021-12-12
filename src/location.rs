@@ -68,4 +68,15 @@ impl Location {
         let addr = SocketAddr::new(IpAddr::from_str(&self.ip)?, self.port);
         Ok(addr)
     }
+
+    pub fn option_to_result(option: &Option<Self>) -> Result<Self> {
+        match option {
+            Some(location) => {
+                return Ok(location.clone())
+            },
+            None => {
+                return Err("None error encoutered while trying to get something from Option.".into());
+            }
+        }
+    }
 }

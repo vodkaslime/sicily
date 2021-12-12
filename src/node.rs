@@ -36,37 +36,16 @@ impl Node {
         }
     }
 
-    /*
-     * Get finger location at index.
-     */
-    pub fn get_finger(&self, i: usize) -> Result<Location> {
-        if i >= self.finger.len() {
-            return Err(
-                format!("Invalid index when retrieving finger. Trying with index: {}.", i).
-                into());
-        }
-        let location = retrieve_location(&self.finger[i])?;
-        Ok(location)
-    }
-
-    /*
-     * Get successor.
-     */
-    pub fn get_successor(&self) -> Result<Location> {
-        let location = retrieve_location(&self.successor)?;
-        Ok(location)
-    } 
-
     pub fn closest_preceding_finger(&self, id: BigUint) -> Result<Location> {
         for i in (0..self.finger.len()).rev() {
-            let location = self.get_finger(i)?;
+            let location = Location::option_to_result(&self.finger[i])?;
 
             if arithmetic::is_in_range(
                 &location.identifier,
                 ( &self.location.identifier, false ),
                 ( &id, false ),
             ) {
-                return Ok(location.clone());
+                return Ok(location);
             }
         }
         Ok(self.location.clone())

@@ -3,6 +3,7 @@ use num::BigUint;
 use std::sync::Arc;
 
 use crate::location::Location;
+use crate::membership;
 use crate::node::NodeList;
 use crate::process;
 use crate::utils::Result;
@@ -20,10 +21,13 @@ pub enum Request {
     GetSuccessor {
         virtual_node_id: u8,
     },
+    GetPredecessor {
+        virtual_node_id: u8,
+    },
     ClosestPrecedingFinger {
         virtual_node_id: u8,
         key: BigUint,
-    }
+    },
 }
 
 impl Request {
@@ -56,16 +60,17 @@ impl Request {
                 let key = parse_key(arr[2])?;
                 Request::Lookup {
                     virtual_node_id,
-                    key
+                    key,
                 }
             },
 
             "join" => {
                 check_params_len(&arr, 3)?;
                 let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                let location = Location::from_string(arr[2].to_string())?;
                 Request::Join {
                     virtual_node_id,
-                    location: Location::from_string(arr[2].to_string())?,
+                    location,
                 }
             },
 
@@ -73,6 +78,14 @@ impl Request {
                 check_params_len(&arr, 2)?;
                 let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
                 Request::GetSuccessor {
+                    virtual_node_id,
+                }
+            },
+
+            "getpredecessor" => {
+                check_params_len(&arr, 2)?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                Request::GetPredecessor {
                     virtual_node_id,
                 }
             },
@@ -101,9 +114,15 @@ impl Request {
             Request::Lookup { virtual_node_id, key } => {
                 format!("LOOKUP {} {}", virtual_node_id, key)
             },
+            Request::Join { virtual_node_id, location } => {
+                format!("JOIN {} {}", virtual_node_id, location.to_string())
+            },
             Request::GetSuccessor { virtual_node_id } => {
                 format!("GETSUCCESSOR {}", virtual_node_id)
             },
+            Request::GetPredecessor { virtual_node_id } => {
+                format!("GETPREDECESSOR {}", virtual_node_id)
+            }
             Request::ClosestPrecedingFinger { virtual_node_id, key } => {
                 format!("CLOSESTPRECEDINGFINGER {} {}", virtual_node_id, key)
             },
@@ -120,16 +139,16 @@ pub enum Response {
     Lookup {
         location: Location,
     },
-    Join {
+    Join,
+    GetSuccessor {
         location: Location,
     },
-    GetSuccessor {
+    GetPredecessor {
         location: Location,
     },
     ClosestPrecedingFinger {
         location: Location,
     },
-    Invalid,
 }
 
 impl Response {
@@ -154,8 +173,21 @@ impl Response {
                 .into());
         } 
 
-        /* Start parsing request. */
+        /* Start parsing response. */
         let response = match arr[1].to_lowercase().as_str() {
+            "lookup" => {
+                check_params_len(&arr, 3)?;
+                let location = Location::from_string(arr[2].to_string())?;
+                Response::Lookup {
+                    location,
+                }
+            },
+
+            "join" => {
+                check_params_len(&arr, 2)?;
+                Response::Join
+            }
+
             "getsuccessor" => {
                 check_params_len(&arr, 3)?;
                 let location = Location::from_string(arr[2].to_string())?;
@@ -163,6 +195,14 @@ impl Response {
                     location,
                 }
             },
+
+            "getpredecessor" => {
+                check_params_len(&arr, 3)?;
+                let location = Location::from_string(arr[2].to_string())?;
+                Response::GetPredecessor {
+                    location,
+                }
+            }
 
             "closestprecedingfinger" => {
                 check_params_len(&arr, 3)?;
@@ -185,9 +225,15 @@ impl Response {
         let res = match self {
             Response::Lookup { location } => {
                 format!("RES LOOKUP {}", location.to_string())
-            }
+            },
+            Response::Join => {
+                format!("RES JOIN")
+            },
             Response::GetSuccessor { location } => {
                 format!("RES GETSUCCESSOR {}", location.to_string())
+            },
+            Response::GetPredecessor{ location } => {
+                format!("RES GETPREDECESSOR {}", location.to_string())
             },
             Response::ClosestPrecedingFinger { location } => {
                 format!("RES CLOSESTPRECEDINGFINGER {}", location.to_string())
@@ -257,15 +303,30 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
             }
         },
 
+        Request::Join { virtual_node_id, location } => {
+            membership::join(node_list, virtual_node_id, location).await?;
+            Response::Join
+        }
+
         Request::GetSuccessor { virtual_node_id } => {
             let location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                node.get_successor()?
+                Location::option_to_result(&node.successor)?
             };
             Response::GetSuccessor {
                 location,
             }
         },
+
+        Request::GetPredecessor { virtual_node_id } => {
+            let location = {
+                let node = node_list.node_list[virtual_node_id as usize].lock().await;
+                Location::option_to_result(&node.predecessor)?
+            };
+            Response::GetPredecessor {
+                location,
+            }
+        }
 
         Request::ClosestPrecedingFinger { virtual_node_id, key } => {
             let location = {
@@ -276,10 +337,6 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
                 location,
             }
         },
-
-        _ => {
-            Response::Invalid
-        }
     };
 
     Ok(response)

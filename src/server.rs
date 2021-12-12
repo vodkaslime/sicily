@@ -54,15 +54,6 @@ async fn start_core_loop(
     }
 }
 
-async fn write_to_socket(stream: &mut TcpStream, string: String) {
-    match stream.write_all(string.as_bytes()).await {
-        Ok(_) => {},
-        Err(err) => {
-            log::error!("Error when writing repsonse to buffer: {}", err);
-        }
-    }
-}
-
 async fn handle_socket_read(
     mut stream: TcpStream,
     output_buffer_size: usize,
@@ -92,6 +83,15 @@ async fn handle_socket_read(
                 log::error!("Error reading from socket: {}", e);
                 return;
             }
+        }
+    }
+}
+
+async fn write_to_socket(stream: &mut TcpStream, string: String) {
+    match stream.write_all(string.as_bytes()).await {
+        Ok(_) => {},
+        Err(err) => {
+            log::error!("Error when writing repsonse to buffer: {}", err);
         }
     }
 }
