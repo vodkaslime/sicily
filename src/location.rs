@@ -34,7 +34,7 @@ impl Location {
     pub fn from_string(id_input: String) -> Result<Self> {
         let arr: Vec<&str> = id_input.split(":").collect();
         if arr.len() < 2 || arr.len() > 3 {
-            return Err("Invalid number of params for a Join request.".into());
+            return Err("Invalid number of params for making a location.".into());
         }
 
         let ip = arr[0].to_string();
