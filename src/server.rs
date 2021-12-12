@@ -35,42 +35,47 @@ async fn start_core_loop(
     log::info!("Listening to port: {}", port);
     loop {
         let node_list = node_list.clone();
+        let mut stream: TcpStream;
+
         match listener.accept().await {
-            Ok((mut stream, _)) => { 
-                log::info!("A new client connected.");
-                tokio::spawn(async move {
-                    let mut buf = BytesMut::with_capacity(output_buffer_size);
-                    loop {
-                        match stream.read_buf(&mut buf).await {
-                            Ok(n) => {
-                                if n == 0 {
-                                    log::info!("Client disconnected.");
-                                    return;
-                                }
-        
-                                match command::process_request(&buf, node_list.clone()).await {
-                                    Ok(string) => {
-                                        write_to_socket(&mut stream, string).await;
-                                        buf.clear();
-                                    },
-                                    Err(err) => {
-                                        log::error!("Could not process request: {}", err);
-                                        return;
-                                    }
-                                };
-                            },
-                            Err(e) => {
-                                log::error!("Error reading from socket: {}", e);
-                                return;
-                            }
-                        }
-                    }
-                });
+            Ok((s, _)) => {
+                stream = s
             }
             Err(e) => {
                 log::error!("Error accepting. Error log: {}", e);
+                continue;
             } 
         };
+
+        log::info!("A new client connected.");
+        tokio::spawn(async move {
+            let mut buf = BytesMut::with_capacity(output_buffer_size);
+            loop {
+                match stream.read_buf(&mut buf).await {
+                    Ok(n) => {
+                        if n == 0 {
+                            log::info!("Client disconnected.");
+                            return;
+                        }
+
+                        match command::process_request(&buf, node_list.clone()).await {
+                            Ok(string) => {
+                                write_to_socket(&mut stream, string).await;
+                                buf.clear();
+                            },
+                            Err(err) => {
+                                log::error!("Could not process request: {}", err);
+                                return;
+                            }
+                        };
+                    },
+                    Err(e) => {
+                        log::error!("Error reading from socket: {}", e);
+                        return;
+                    }
+                }
+            }
+        });
     }
 }
 
