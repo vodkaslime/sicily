@@ -6,11 +6,20 @@ use crate::client::Client;
 use crate::location::Location;
 use crate::utils::Result;
 
+/*
+ * Find successor node of a key, starting by asking node at location.
+ * This function is a part of lookup process.
+ * This function is a part of join process.
+ */
 pub async fn find_successor(location: &Location, key: &BigUint) -> Result<Location> {
     let pred = find_predecessor(location, key).await?;
     return get_successor(&pred).await;
 }
 
+/*
+ * Find predecessor node of a key, starting by asking node at location.
+ * This function is a part of lookup process.
+ */
 async fn find_predecessor(location: &Location, key: &BigUint) -> Result<Location> {
     let mut location = location.clone();
     while !arithmetic::is_in_range(
@@ -23,6 +32,10 @@ async fn find_predecessor(location: &Location, key: &BigUint) -> Result<Location
     Ok(location)
 }
 
+/*
+ * Find successor node of a node at location.
+ * This function is a part of lookup process.
+ */
 async fn get_successor(location: &Location) -> Result<Location> {
     let request = Request::GetSuccessor {
         virtual_node_id: location.virtual_node_id,
@@ -42,6 +55,10 @@ async fn get_successor(location: &Location) -> Result<Location> {
     Ok(res_location)
 }
 
+/*
+ * Find closest preceding node of a key, by finding from fingers of a node at location.
+ * This function is a part of lookup process.
+ */
 async fn find_closest_preceding_finger(location: &Location, key: &BigUint) -> Result<Location> {
     let request = Request::ClosestPrecedingFinger {
         virtual_node_id: location.virtual_node_id,
@@ -61,3 +78,4 @@ async fn find_closest_preceding_finger(location: &Location, key: &BigUint) -> Re
     };
     Ok(res_location)
 }
+

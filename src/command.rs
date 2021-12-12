@@ -260,7 +260,7 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
         Request::GetSuccessor { virtual_node_id } => {
             let location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                node.successor.clone()
+                node.get_successor()?
             };
             Response::GetSuccessor {
                 location,
@@ -270,7 +270,7 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
         Request::ClosestPrecedingFinger { virtual_node_id, key } => {
             let location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                node.closest_preceding_finger(key)
+                node.closest_preceding_finger(key)?
             };
             Response::ClosestPrecedingFinger {
                 location,
