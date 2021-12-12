@@ -12,7 +12,7 @@ pub struct Node {
     pub predecessor: Option<Location>,
     pub successor: Option<Location>,
     pub finger: Vec<Option<Location>>,
-    pub finger_start_index: Vec<BigUint>,
+    pub finger_start_identifier: Vec<BigUint>,
 }
 
 impl Node {
@@ -25,7 +25,7 @@ impl Node {
         let successor = Some(location.clone());
 
         let mut finger: Vec<Option<Location>> = Vec::new();
-        let mut finger_start_index: Vec<BigUint> = Vec::new();
+        let mut finger_start_identifier: Vec<BigUint> = Vec::new();
         for i in 0..config.id_bits {
             /* Initialize finger list with local location. */
             finger.push(Some(location.clone()));
@@ -36,7 +36,7 @@ impl Node {
             let pow = base.pow(i as u32);
             let divisor = base.pow(config.id_bits as u32);
             let start_index = (identifier + pow) % divisor;
-            finger_start_index.push(start_index);
+            finger_start_identifier.push(start_index);
         }
 
         Self {
@@ -44,7 +44,7 @@ impl Node {
             predecessor,
             successor,
             finger,
-            finger_start_index,
+            finger_start_identifier,
         }
     }
 

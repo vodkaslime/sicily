@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use rand::Rng;
 
 use crate::arithmetic;
 use crate::client::Client;
@@ -39,7 +40,7 @@ pub async fn join(
 /*
  * Periodic function called to stabilize the metadata of nodes in the cluster.
  */
-pub async fn stablize(node_list: NodeList, virtual_node_id: u8) -> Result<()> {
+pub async fn stablize(node_list: Arc<NodeList>, virtual_node_id: u8) -> Result<()> {
     let (mut successor, local_location) = {
         let node = node_list.node_list[virtual_node_id as usize].lock().await;
         let successor = Location::option_to_result(&node.successor)?;
@@ -89,4 +90,28 @@ async fn notify(local_location: Location, target_location: Location) -> Result<(
     Ok(())
 }
 
-pub async fn fix_fingers() {}
+/*
+ * Periodic function to randomly pick a finger and fix it by contacting with the cluster.
+ */
+pub async fn fix_fingers(node_list: Arc<NodeList>, virtual_node_id: u8) -> Result<()> {
+
+    /* 1. Pick a random finger to fix. */
+    let mut rng = rand::thread_rng();
+    let (index, start_identifier, local_location) = {
+        let node = node_list.node_list[virtual_node_id as usize].lock().await;
+        let index = rng.gen_range(1..node.finger.len());
+        let start_identifier = node.finger_start_identifier[index].clone();
+        let local_location = node.location.clone();
+        (index, start_identifier, local_location)
+    };
+
+    /* 2. Communicate with the cluster. */
+    let successor = process::find_successor(&local_location, &start_identifier).await?;
+
+    /* 3. Update the finger. */
+    {
+        let mut node = node_list.node_list[virtual_node_id as usize].lock().await;
+        node.finger[index] = Some(successor);
+    }
+    Ok(())
+}
