@@ -5,6 +5,7 @@ pub mod config;
 pub mod constants;
 pub mod location;
 pub mod server;
+pub mod membership;
 pub mod node;
 pub mod process;
 pub mod utils;
