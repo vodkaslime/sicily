@@ -50,6 +50,22 @@ impl Node {
         }
         Ok(self.location.clone())
     }
+
+    pub fn notify_with(&mut self, notifier: &Location) {
+        /* The flag to see if the current node needs to update predecessor. */
+        let flag = match &self.predecessor {
+            Some(predecessor) => {
+                arithmetic::is_in_range(
+                    &notifier.identifier,
+                    (&predecessor.identifier, false),
+                    (&self.location.identifier, false))
+            },
+            None => { true },
+        };
+        if flag {
+            self.predecessor = Some(notifier.clone());
+        }
+    }
 }
 
 #[derive(Debug)]

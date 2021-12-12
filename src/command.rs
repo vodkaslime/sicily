@@ -10,24 +10,28 @@ use crate::utils::Result;
 
 #[derive(Debug)]
 pub enum Request {
-    Lookup {
+    ClosestPrecedingFinger {
         virtual_node_id: u8,
         key: BigUint,
+    },
+    GetPredecessor {
+        virtual_node_id: u8,
+    },
+    GetSuccessor {
+        virtual_node_id: u8,
     },
     Join {
         virtual_node_id: u8,
         location: Location,
     },
-    GetSuccessor {
-        virtual_node_id: u8,
-    },
-    GetPredecessor {
-        virtual_node_id: u8,
-    },
-    ClosestPrecedingFinger {
+    Lookup {
         virtual_node_id: u8,
         key: BigUint,
     },
+    Notify {
+        virtual_node_id: u8,
+        notifier: Location,
+    }
 }
 
 impl Request {
@@ -54,42 +58,6 @@ impl Request {
 
         /* Start parsing request. */
         let command = match arr[0].to_lowercase().as_str() {
-            "lookup" => {
-                check_params_len(&arr, 3)?;
-                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
-                let key = parse_key(arr[2])?;
-                Request::Lookup {
-                    virtual_node_id,
-                    key,
-                }
-            },
-
-            "join" => {
-                check_params_len(&arr, 3)?;
-                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
-                let location = Location::from_string(arr[2].to_string())?;
-                Request::Join {
-                    virtual_node_id,
-                    location,
-                }
-            },
-
-            "getsuccessor" => {
-                check_params_len(&arr, 2)?;
-                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
-                Request::GetSuccessor {
-                    virtual_node_id,
-                }
-            },
-
-            "getpredecessor" => {
-                check_params_len(&arr, 2)?;
-                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
-                Request::GetPredecessor {
-                    virtual_node_id,
-                }
-            },
-
             "closestprecedingfinger" => {
                 check_params_len(&arr, 3)?;
                 let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
@@ -99,7 +67,47 @@ impl Request {
                     key,
                 }
             },
-
+            "getpredecessor" => {
+                check_params_len(&arr, 2)?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                Request::GetPredecessor {
+                    virtual_node_id,
+                }
+            },
+            "getsuccessor" => {
+                check_params_len(&arr, 2)?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                Request::GetSuccessor {
+                    virtual_node_id,
+                }
+            },
+            "join" => {
+                check_params_len(&arr, 3)?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                let location = Location::from_string(arr[2].to_string())?;
+                Request::Join {
+                    virtual_node_id,
+                    location,
+                }
+            },
+            "lookup" => {
+                check_params_len(&arr, 3)?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                let key = parse_key(arr[2])?;
+                Request::Lookup {
+                    virtual_node_id,
+                    key,
+                }
+            },
+            "notify" => {
+                check_params_len(&arr, 3)?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                let notifier = Location::from_string(arr[2].to_string())?;
+                Request::Notify {
+                    virtual_node_id,
+                    notifier,
+                }
+            },
             _ => {
                 return Err(
                     "Invalid command. Unrecognized command."
@@ -111,24 +119,24 @@ impl Request {
 
     pub fn serialize(&self) -> Result<String> {
         let res = match self {
-            Request::Lookup { virtual_node_id, key } => {
-                format!("LOOKUP {} {}", virtual_node_id, key)
+            Request::ClosestPrecedingFinger { virtual_node_id, key } => {
+                format!("CLOSESTPRECEDINGFINGER {} {}", virtual_node_id, key)
             },
-            Request::Join { virtual_node_id, location } => {
-                format!("JOIN {} {}", virtual_node_id, location.to_string())
+            Request::GetPredecessor { virtual_node_id } => {
+                format!("GETPREDECESSOR {}", virtual_node_id)
             },
             Request::GetSuccessor { virtual_node_id } => {
                 format!("GETSUCCESSOR {}", virtual_node_id)
             },
-            Request::GetPredecessor { virtual_node_id } => {
-                format!("GETPREDECESSOR {}", virtual_node_id)
-            }
-            Request::ClosestPrecedingFinger { virtual_node_id, key } => {
-                format!("CLOSESTPRECEDINGFINGER {} {}", virtual_node_id, key)
+            Request::Join { virtual_node_id, location } => {
+                format!("JOIN {} {}", virtual_node_id, location.to_string())
             },
-            _ => {
-                return Err("Error serializing request. Invalid request type.".into());
-            }
+            Request::Lookup { virtual_node_id, key } => {
+                format!("LOOKUP {} {}", virtual_node_id, key)
+            },
+            Request::Notify { virtual_node_id, notifier } => {
+                format!("NOTIFY {} {}", virtual_node_id, notifier.to_string())
+            },
         };
         Ok(res)
     }
@@ -136,19 +144,20 @@ impl Request {
 
 #[derive(Debug)]
 pub enum Response {
-    Lookup {
-        location: Location,
-    },
-    Join,
-    GetSuccessor {
+    ClosestPrecedingFinger {
         location: Location,
     },
     GetPredecessor {
         location: Location,
     },
-    ClosestPrecedingFinger {
+    GetSuccessor {
         location: Location,
     },
+    Join,
+    Lookup {
+        location: Location,
+    },
+    Notify,
 }
 
 impl Response {
@@ -175,35 +184,6 @@ impl Response {
 
         /* Start parsing response. */
         let response = match arr[1].to_lowercase().as_str() {
-            "lookup" => {
-                check_params_len(&arr, 3)?;
-                let location = Location::from_string(arr[2].to_string())?;
-                Response::Lookup {
-                    location,
-                }
-            },
-
-            "join" => {
-                check_params_len(&arr, 2)?;
-                Response::Join
-            }
-
-            "getsuccessor" => {
-                check_params_len(&arr, 3)?;
-                let location = Location::from_string(arr[2].to_string())?;
-                Response::GetSuccessor {
-                    location,
-                }
-            },
-
-            "getpredecessor" => {
-                check_params_len(&arr, 3)?;
-                let location = Location::from_string(arr[2].to_string())?;
-                Response::GetPredecessor {
-                    location,
-                }
-            }
-
             "closestprecedingfinger" => {
                 check_params_len(&arr, 3)?;
                 let location = Location::from_string(arr[2].to_string())?;
@@ -211,7 +191,35 @@ impl Response {
                     location,
                 }
             },
-
+            "getpredecessor" => {
+                check_params_len(&arr, 3)?;
+                let location = Location::from_string(arr[2].to_string())?;
+                Response::GetPredecessor {
+                    location,
+                }
+            },
+            "getsuccessor" => {
+                check_params_len(&arr, 3)?;
+                let location = Location::from_string(arr[2].to_string())?;
+                Response::GetSuccessor {
+                    location,
+                }
+            },
+            "join" => {
+                check_params_len(&arr, 2)?;
+                Response::Join
+            }
+            "lookup" => {
+                check_params_len(&arr, 3)?;
+                let location = Location::from_string(arr[2].to_string())?;
+                Response::Lookup {
+                    location,
+                }
+            },
+            "notify" => {
+                check_params_len(&arr, 2)?;
+                Response::Notify
+            }
             _ => {
                 return Err(
                     "Invalid response. Unrecognized response type."
@@ -223,24 +231,24 @@ impl Response {
 
     pub fn serialize(&self) -> Result<String> {
         let res = match self {
-            Response::Lookup { location } => {
-                format!("RES LOOKUP {}", location.to_string())
-            },
-            Response::Join => {
-                format!("RES JOIN")
-            },
-            Response::GetSuccessor { location } => {
-                format!("RES GETSUCCESSOR {}", location.to_string())
+            Response::ClosestPrecedingFinger { location } => {
+                format!("RES CLOSESTPRECEDINGFINGER {}", location.to_string())
             },
             Response::GetPredecessor{ location } => {
                 format!("RES GETPREDECESSOR {}", location.to_string())
             },
-            Response::ClosestPrecedingFinger { location } => {
-                format!("RES CLOSESTPRECEDINGFINGER {}", location.to_string())
-            }
-            _ => {
-                return Err("Error serializing response. Invalid response type.".into());
-            }
+            Response::GetSuccessor { location } => {
+                format!("RES GETSUCCESSOR {}", location.to_string())
+            },
+            Response::Join => {
+                format!("RES JOIN")
+            },
+            Response::Lookup { location } => {
+                format!("RES LOOKUP {}", location.to_string())
+            },
+            Response::Notify => {
+                format!("RES NOTIFY")
+            },
         };
         Ok(res)
     }
@@ -291,6 +299,37 @@ fn parse_key(input: &str) -> Result<BigUint> {
 
 async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<Response> {
     let response = match request {
+        Request::ClosestPrecedingFinger { virtual_node_id, key } => {
+            let location = {
+                let node = node_list.node_list[virtual_node_id as usize].lock().await;
+                node.closest_preceding_finger(key)?
+            };
+            Response::ClosestPrecedingFinger {
+                location,
+            }
+        },
+        Request::GetPredecessor { virtual_node_id } => {
+            let location = {
+                let node = node_list.node_list[virtual_node_id as usize].lock().await;
+                Location::option_to_result(&node.predecessor)?
+            };
+            Response::GetPredecessor {
+                location,
+            }
+        },
+        Request::GetSuccessor { virtual_node_id } => {
+            let location = {
+                let node = node_list.node_list[virtual_node_id as usize].lock().await;
+                Location::option_to_result(&node.successor)?
+            };
+            Response::GetSuccessor {
+                location,
+            }
+        },
+        Request::Join { virtual_node_id, location } => {
+            membership::join(node_list, virtual_node_id, location).await?;
+            Response::Join
+        },
         Request::Lookup { virtual_node_id, key } => {
             let own_location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
@@ -302,41 +341,13 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
                 location
             }
         },
-
-        Request::Join { virtual_node_id, location } => {
-            membership::join(node_list, virtual_node_id, location).await?;
-            Response::Join
+        Request::Notify { virtual_node_id, notifier } => {
+            {
+                let mut node = node_list.node_list[virtual_node_id as usize].lock().await;
+                node.notify_with(&notifier);
+            }
+            Response::Notify
         }
-
-        Request::GetSuccessor { virtual_node_id } => {
-            let location = {
-                let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                Location::option_to_result(&node.successor)?
-            };
-            Response::GetSuccessor {
-                location,
-            }
-        },
-
-        Request::GetPredecessor { virtual_node_id } => {
-            let location = {
-                let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                Location::option_to_result(&node.predecessor)?
-            };
-            Response::GetPredecessor {
-                location,
-            }
-        }
-
-        Request::ClosestPrecedingFinger { virtual_node_id, key } => {
-            let location = {
-                let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                node.closest_preceding_finger(key)?
-            };
-            Response::ClosestPrecedingFinger {
-                location,
-            }
-        },
     };
 
     Ok(response)

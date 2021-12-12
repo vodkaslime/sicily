@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use crate::arithmetic;
+use crate::client::Client;
+use crate::command::Request;
 use crate::location::Location;
 use crate::node::NodeList;
 use crate::process;
@@ -36,14 +39,35 @@ pub async fn join(
 /*
  * Periodic function called to stabilize the metadata of nodes in the cluster.
  */
-pub async fn stablize(
-    node_list: NodeList,
-    virtual_node_id: u8,
-) -> Result<()> {
-    let successor = {
+pub async fn stablize(node_list: NodeList, virtual_node_id: u8) -> Result<()> {
+    let (mut successor, local_location) = {
         let node = node_list.node_list[virtual_node_id as usize].lock().await;
-        Location::option_to_result(&node.successor)?
+        let successor = Location::option_to_result(&node.successor)?;
+        (successor, node.location.clone())
     };
-    let predecessor_of_successor = process::get_predecessor(&successor);
+
+    let predecessor_of_successor = process::get_predecessor(&successor).await?;
+    if arithmetic::is_in_range(
+        &predecessor_of_successor.identifier,
+        (&local_location.identifier, false),
+        (&successor.identifier, false)) {
+            {
+                let mut node = node_list.node_list[virtual_node_id as usize].lock().await;
+                node.successor = Some(predecessor_of_successor.clone());
+            }
+            successor = predecessor_of_successor.clone();
+        }
+    
+    notify(local_location, successor).await?;
+    Ok(())
+}
+
+async fn notify(local_location: Location, target_location: Location) -> Result<()> {
+    let request = Request::Notify {
+        virtual_node_id: target_location.virtual_node_id,
+        notifier: local_location,
+    };
+    let mut client = Client::new(&target_location).await?;
+
     Ok(())
 }
