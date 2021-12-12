@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use rand::Rng;
+use rand::prelude::*;
 
 use crate::arithmetic;
 use crate::client::Client;
@@ -93,11 +93,11 @@ async fn notify(local_location: Location, target_location: Location) -> Result<(
 /*
  * Periodic function to randomly pick a finger and fix it by contacting with the cluster.
  */
-pub async fn fix_fingers(node_list: Arc<NodeList>, virtual_node_id: u8) -> Result<()> {
+pub async fn fix_fingers(virtual_node_id: u8, node_list: Arc<NodeList>) -> Result<()> {
 
     /* 1. Pick a random finger to fix. */
-    let mut rng = rand::thread_rng();
     let (index, start_identifier, local_location) = {
+        let mut rng = rand::rngs::StdRng::from_entropy();
         let node = node_list.node_list[virtual_node_id as usize].lock().await;
         let index = rng.gen_range(1..node.finger.len());
         let start_identifier = node.finger_start_identifier[index].clone();

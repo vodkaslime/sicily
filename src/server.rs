@@ -121,7 +121,7 @@ async fn start_stabilizing_task(virtual_node_id: u8, node_list: Arc<NodeList>) {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let node_list = node_list.clone();
         log::info!("Staring task for node id: {}", virtual_node_id);
-        match membership::stablize(virtual_node_id, node_list).await {
+        match membership::stablize(virtual_node_id, node_list.clone()).await {
             Ok(()) => {
                 /* Happy case. Nothing to do. */
             },
@@ -129,6 +129,6 @@ async fn start_stabilizing_task(virtual_node_id: u8, node_list: Arc<NodeList>) {
                 log::error!{"Error stabilizing at virtual node id {}. Error message: {}", virtual_node_id, e};
             }
         }
-        // membership::fix_fingers().await;
+        membership::fix_fingers(virtual_node_id, node_list.clone()).await;
     }
 }
