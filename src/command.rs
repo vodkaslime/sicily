@@ -19,6 +19,10 @@ pub enum Request {
     },
     GetSuccessor {
         virtual_node_id: u8,
+    },
+    ClosestPrecedingFinger {
+        virtual_node_id: u8,
+        key: BigUint,
     }
 }
 
@@ -48,27 +52,8 @@ impl Request {
         let command = match arr[0].to_lowercase().as_str() {
             "lookup" => {
                 check_params_len(&arr, 3)?;
-
-                let virtual_node_id = str::parse::<u8>(arr[1])?;
-                if virtual_node_id as usize >= node_list.node_list.len() {
-                    return Err(
-                        "Invalid command. Virtual node number too large."
-                        .into());
-                }
-
-                let key;
-                match BigUint::parse_bytes(arr[2].as_bytes(), 16) {
-                    Some(k) => {
-                        key = k;
-                    },
-                    None => {
-                        return Err(
-                            "Invalid command. Failed to parse identifier."
-                            .into()
-                        );
-                    }
-                };
-
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                let key = parse_key(arr[2])?;
                 Request::Lookup {
                     virtual_node_id,
                     key
@@ -77,8 +62,7 @@ impl Request {
 
             "join" => {
                 check_params_len(&arr, 3)?;
-
-                let virtual_node_id = str::parse::<u8>(arr[1])?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
                 Request::Join {
                     virtual_node_id,
                     location: Location::from_string(arr[2].to_string())?,
@@ -87,12 +71,22 @@ impl Request {
 
             "getsuccessor" => {
                 check_params_len(&arr, 2)?;
-
-                let virtual_node_id = str::parse::<u8>(arr[1])?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
                 Request::GetSuccessor {
                     virtual_node_id,
                 }
-            }
+            },
+
+            "closestprecedingfinger" => {
+                check_params_len(&arr, 3)?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                let key = parse_key(arr[2])?;
+                Request::ClosestPrecedingFinger {
+                    virtual_node_id,
+                    key,
+                }
+            },
+
             _ => {
                 return Err(
                     "Invalid command. Unrecognized command."
@@ -109,6 +103,9 @@ impl Request {
             },
             Request::GetSuccessor { virtual_node_id } => {
                 format!("GETSUCCESSOR {}", virtual_node_id)
+            },
+            Request::ClosestPrecedingFinger { virtual_node_id, key } => {
+                format!("CLOSESTPRECEDINGFINGER {} {}", virtual_node_id, key)
             },
             _ => {
                 return Err("Error serializing request. Invalid request type.".into());
@@ -129,6 +126,9 @@ pub enum Response {
     GetSuccessor {
         location: Location,
     },
+    ClosestPrecedingFinger {
+        location: Location,
+    },
     Invalid,
 }
 
@@ -138,7 +138,7 @@ impl Response {
      * Param node_list is needed here to guard virtual_node_id.
      */
     pub fn parse_from_buf(buf: &BytesMut) -> Result<Self> {
-        let mut s = String::from_utf8(buf.to_vec())?;
+        let s = String::from_utf8(buf.to_vec())?;
         let arr: Vec<&str> = s.split(" ").collect();
 
         /* Should have at least two valid string in the array vector after split. */
@@ -162,7 +162,16 @@ impl Response {
                 Response::GetSuccessor {
                     location,
                 }
-            }
+            },
+
+            "closestprecedingfinger" => {
+                check_params_len(&arr, 3)?;
+                let location = Location::from_string(arr[2].to_string())?;
+                Response::ClosestPrecedingFinger {
+                    location,
+                }
+            },
+
             _ => {
                 return Err(
                     "Invalid response. Unrecognized response type."
@@ -180,6 +189,9 @@ impl Response {
             Response::GetSuccessor { location } => {
                 format!("RES GETSUCCESSOR {}", location.to_string())
             },
+            Response::ClosestPrecedingFinger { location } => {
+                format!("RES CLOSESTPRECEDINGFINGER {}", location.to_string())
+            }
             _ => {
                 return Err("Error serializing response. Invalid response type.".into());
             }
@@ -201,6 +213,36 @@ fn check_params_len(arr: &Vec<&str>, len: usize) -> Result<()> {
     Ok(())
 }
 
+/*
+ * Convenience function to parse virtual node id.
+ * Need to convert str to u8, and then make sure it is less than node_list length.
+ */
+fn parse_virtual_node_id(input: &str, node_list: Arc<NodeList>) -> Result<u8> {
+    let virtual_node_id = str::parse::<u8>(input)?;
+    if virtual_node_id as usize >= node_list.node_list.len() {
+        return Err(
+            "Invalid command. Virtual node number too large."
+            .into());
+    }
+    Ok(virtual_node_id)
+}
+
+/*
+ * Convenience function to parse key(id) as a big uint.
+ */
+fn parse_key(input: &str) -> Result<BigUint> {
+    let key = match BigUint::parse_bytes(input.as_bytes(), 16) {
+        Some(key) => { key },
+        None => {
+            return Err(
+                "Invalid command. Failed to parse identifier."
+                .into()
+            );
+        }
+    };
+    Ok(key)
+}
+
 async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<Response> {
     let response = match request {
         Request::Lookup { virtual_node_id, key } => {
@@ -214,6 +256,7 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
                 location
             }
         },
+
         Request::GetSuccessor { virtual_node_id } => {
             let location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
@@ -222,11 +265,23 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
             Response::GetSuccessor {
                 location,
             }
-        }
+        },
+
+        Request::ClosestPrecedingFinger { virtual_node_id, key } => {
+            let location = {
+                let node = node_list.node_list[virtual_node_id as usize].lock().await;
+                node.closest_preceding_finger(key)
+            };
+            Response::ClosestPrecedingFinger {
+                location,
+            }
+        },
+
         _ => {
             Response::Invalid
         }
     };
+
     Ok(response)
 }
 
