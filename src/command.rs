@@ -219,7 +219,7 @@ impl Response {
             "notify" => {
                 check_params_len(&arr, 2)?;
                 Response::Notify
-            }
+            },
             _ => {
                 return Err(
                     "Invalid response. Unrecognized response type."

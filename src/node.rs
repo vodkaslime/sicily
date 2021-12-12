@@ -60,7 +60,7 @@ impl Node {
                     (&predecessor.identifier, false),
                     (&self.location.identifier, false))
             },
-            None => { true },
+            None => true,
         };
         if flag {
             self.predecessor = Some(notifier.clone());

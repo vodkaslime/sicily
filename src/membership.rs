@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::arithmetic;
 use crate::client::Client;
-use crate::command::Request;
+use crate::command::{ Request, Response };
 use crate::location::Location;
 use crate::node::NodeList;
 use crate::process;
@@ -68,6 +68,18 @@ async fn notify(local_location: Location, target_location: Location) -> Result<(
         notifier: local_location,
     };
     let mut client = Client::new(&target_location).await?;
-
+    client.send_request(request).await?;
+    let response = client.receive().await?;
+    match response {
+        Response::Notify => {
+            /* Happy case, nothing to do. */
+        },
+        _ => {
+            return Err(
+                "Error receiving response while doing NOTIFY. Got unexpected response type."
+                .into()
+            );
+        }
+    }
     Ok(())
 }
