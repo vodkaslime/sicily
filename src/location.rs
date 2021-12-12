@@ -15,14 +15,13 @@ pub struct Location {
 }
 
 impl Location {
-    pub fn new(
-        config: &Config,
-        virtual_node_id: u8,
-    ) -> Self {
+    pub fn new(config: &Config, virtual_node_id: u8) -> Self {
         let ip = config.host.clone();
         let port = config.port;
         let id_input = format!("{}:{}:{}", &ip, port, virtual_node_id);
-        let identifier = arithmetic::hash(&id_input);
+        let base = BigUint::from_bytes_be(&[2]);
+        let divisor = base.pow(config.id_bits as u32);
+        let identifier = arithmetic::hash(&id_input) % divisor;
         return Self {
             ip,
             port,
@@ -69,6 +68,11 @@ impl Location {
         Ok(addr)
     }
 
+    /*
+     * Convenience function to retrieve Location from Option.
+     * This is due to the issue that rust doesn't implement Box<Error> for Option's NoneError.
+     * Issue link: https://github.com/rust-lang/rust/issues/46871.
+     */
     pub fn option_to_result(option: &Option<Self>) -> Result<Self> {
         match option {
             Some(location) => {

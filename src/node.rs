@@ -12,6 +12,7 @@ pub struct Node {
     pub predecessor: Option<Location>,
     pub successor: Option<Location>,
     pub finger: Vec<Option<Location>>,
+    pub finger_start_index: Vec<BigUint>,
 }
 
 impl Node {
@@ -24,8 +25,18 @@ impl Node {
         let successor = Some(location.clone());
 
         let mut finger: Vec<Option<Location>> = Vec::new();
-        for _ in 0..config.id_bits {
+        let mut finger_start_index: Vec<BigUint> = Vec::new();
+        for i in 0..config.id_bits {
+            /* Initialize finger list with local location. */
             finger.push(Some(location.clone()));
+
+            /* Initialize finger start index list. */
+            let identifier = &location.identifier;
+            let base = BigUint::from_bytes_be(&[2]);
+            let pow = base.pow(i as u32);
+            let divisor = base.pow(config.id_bits as u32);
+            let start_index = (identifier + pow) % divisor;
+            finger_start_index.push(start_index);
         }
 
         Self {
@@ -33,6 +44,7 @@ impl Node {
             predecessor,
             successor,
             finger,
+            finger_start_index,
         }
     }
 
@@ -82,22 +94,6 @@ impl NodeList {
 
         Self {
             node_list,
-        }
-    }
-}
-
-/*
- * Convenience function to retrieve Location from Option.
- * This is due to the issue that rust doesn't implement Box<Error> for Option's NoneError.
- * Issue link: https://github.com/rust-lang/rust/issues/46871 
- */
-pub fn retrieve_location(option: &Option<Location>) -> Result<Location> {
-    match option {
-        Some(location) => {
-            return Ok(location.clone())
-        },
-        None => {
-            return Err("None error encoutered while trying to get something from Option.".into());
         }
     }
 }

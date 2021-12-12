@@ -62,6 +62,11 @@ pub async fn stablize(node_list: NodeList, virtual_node_id: u8) -> Result<()> {
     Ok(())
 }
 
+/*
+ * Notify a supposedly successor (target_location) of a given node (local_location).
+ * The successor, after receiving the notification, will make a decision whether
+ * it needs to update its predecessor pointer to the local_location.
+ */
 async fn notify(local_location: Location, target_location: Location) -> Result<()> {
     let request = Request::Notify {
         virtual_node_id: target_location.virtual_node_id,
@@ -83,3 +88,5 @@ async fn notify(local_location: Location, target_location: Location) -> Result<(
     }
     Ok(())
 }
+
+pub async fn fix_fingers() {}
