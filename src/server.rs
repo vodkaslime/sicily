@@ -126,9 +126,16 @@ async fn start_stabilizing_task(virtual_node_id: u8, node_list: Arc<NodeList>) {
                 /* Happy case. Nothing to do. */
             },
             Err(e) => {
-                log::error!{"Error stabilizing at virtual node id {}. Error message: {}", virtual_node_id, e};
+                log::error!{"Error stabilizing at virtual node id {}. Error message: {}.", virtual_node_id, e};
             }
         }
-        membership::fix_fingers(virtual_node_id, node_list.clone()).await;
+        match membership::fix_fingers(virtual_node_id, node_list.clone()).await {
+            Ok(()) =>{
+                /* Happy case. Nothing to do. */
+            },
+            Err(e) => {
+                log::error!("Error fixing fingers at virtual node id {}. Error message: {}.", virtual_node_id, e);
+            }
+        }
     }
 }
