@@ -42,8 +42,13 @@ pub fn is_in_range(
             left_condition || right_condition
         }
     } else {
-        /* When left == right, we assume they encompass the entire ring. */
-        true
+        /* If left equals right and neither left nor right is inclusive,
+         * then we just validate that the n is not equal to the border.
+         * Otherwise just return true, since the borders encompass the entire ring. */
+        match !left_inclusive && !right_inclusive {
+            true => { n != left },
+            false => { true },
+        }
     }
 }
 
@@ -203,7 +208,11 @@ mod tests {
                     (&left, *left_inclusive),
                     (&right, *right_inclusive),
                 );
-                assert_eq!(res, true);
+                if !left_inclusive && !right_inclusive {
+                    assert_eq!(res, false);
+                } else {
+                    assert_eq!(res, true);
+                }
             }
         }
 
