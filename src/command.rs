@@ -311,7 +311,7 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
         Request::GetPredecessor { virtual_node_id } => {
             let location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                Location::option_to_result(&node.predecessor)?
+                node.get_predecessor()?
             };
             Response::GetPredecessor {
                 location,
@@ -320,7 +320,7 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
         Request::GetSuccessor { virtual_node_id } => {
             let location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                Location::option_to_result(&node.successor)?
+                node.get_successor()?
             };
             Response::GetSuccessor {
                 location,
@@ -333,7 +333,7 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
         Request::Lookup { virtual_node_id, key } => {
             let own_location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                node.location.clone()
+                node.own_location()
             };
 
             let location = process::find_successor(&own_location, &key).await?;

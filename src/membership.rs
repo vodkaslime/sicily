@@ -22,7 +22,7 @@ pub async fn join(
     /* 1. Retrieve the local identifier of the node. */
     let key = {
         let node = node_list.node_list[virtual_node_id as usize].lock().await;
-        node.location.identifier.clone()
+        node.own_location().identifier
     };
 
     /* 2. Based on the identifier, retrieve the successor. */
@@ -31,8 +31,8 @@ pub async fn join(
     /* 3. Update the node's metadata. */
     {
         let mut node = node_list.node_list[virtual_node_id as usize].lock().await;
-        node.predecessor = None;
-        node.successor = Some(successor);
+        node.set_predecessor(None);
+        node.set_successor(Some(successor));
     }
     Ok(())
 }
@@ -43,8 +43,8 @@ pub async fn join(
 pub async fn stablize(virtual_node_id: u8, node_list: Arc<NodeList>) -> Result<()> {
     let (mut successor, local_location) = {
         let node = node_list.node_list[virtual_node_id as usize].lock().await;
-        let successor = Location::option_to_result(&node.successor)?;
-        (successor, node.location.clone())
+        let successor = node.get_successor()?;
+        (successor, node.own_location())
     };
 
     let predecessor_of_successor = process::get_predecessor(&successor).await?;
@@ -54,7 +54,7 @@ pub async fn stablize(virtual_node_id: u8, node_list: Arc<NodeList>) -> Result<(
         (&successor.identifier, false)) {
             {
                 let mut node = node_list.node_list[virtual_node_id as usize].lock().await;
-                node.successor = Some(predecessor_of_successor.clone());
+                node.set_successor(Some(predecessor_of_successor.clone()));
             }
             successor = predecessor_of_successor.clone();
         }
@@ -99,9 +99,9 @@ pub async fn fix_fingers(virtual_node_id: u8, node_list: Arc<NodeList>) -> Resul
     let (index, start_identifier, local_location) = {
         let mut rng = rand::rngs::StdRng::from_entropy();
         let node = node_list.node_list[virtual_node_id as usize].lock().await;
-        let index = rng.gen_range(1..node.finger.len());
-        let start_identifier = node.finger_start_identifier[index].clone();
-        let local_location = node.location.clone();
+        let index = rng.gen_range(1..node.get_finger_len());
+        let start_identifier = node.get_finger_start_identifier(index)?;
+        let local_location = node.own_location();
         (index, start_identifier, local_location)
     };
 
@@ -111,7 +111,7 @@ pub async fn fix_fingers(virtual_node_id: u8, node_list: Arc<NodeList>) -> Resul
     /* 3. Update the finger. */
     {
         let mut node = node_list.node_list[virtual_node_id as usize].lock().await;
-        node.finger[index] = Some(successor);
+        node.set_finger(index, Some(successor))?;
     }
     Ok(())
 }

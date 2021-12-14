@@ -8,13 +8,20 @@ use crate::utils::Result;
 
 #[derive(Debug)]
 pub struct Node {
-    pub location: Location,
-    pub predecessor: Option<Location>,
-    pub successor: Option<Location>,
-    pub finger: Vec<Option<Location>>,
-    pub finger_start_identifier: Vec<BigUint>,
+    location: Location,
+    predecessor: Option<Location>,
+    finger: Vec<Option<Location>>,
+    finger_start_identifier: Vec<BigUint>,
 }
 
+/*
+ * I want to make the program as simple as possible, so I prefer direct access
+ * to structs. However for Node, there are some tricky places, for example the
+ * "successor" is actually the finger[0], accroding to the paper.
+ * 
+ * Therefore the Node struct is well wrapped and we need to use getter and setter
+ * to operate on it.
+ */
 impl Node {
     pub fn new(
         config: &Config,
@@ -42,10 +49,61 @@ impl Node {
         Self {
             location,
             predecessor,
-            successor,
             finger,
             finger_start_identifier,
         }
+    }
+
+    fn validate_index<T>(&self, vec: &Vec<T>, n: usize) -> Result<()> {
+        if n >= self.finger.len() {
+            return Err("Error retrieving finger. Index overflow.".into());
+        }
+        Ok(())
+    }
+
+    pub fn own_location(&self) -> Location {
+        self.location.clone()
+    }
+
+    /* The  */
+    pub fn get_successor(&self) -> Result<Location> {
+        let successor = Location::option_to_result(&self.finger[0])?;
+        Ok(successor)
+    }
+
+    pub fn set_successor(&mut self, successor: Option<Location>) {
+        self.finger[0] = successor;
+    }
+
+    pub fn get_predecessor(&self) -> Result<Location> {
+        let predecessor = Location::option_to_result(&self.predecessor)?;
+        Ok(predecessor)
+    }
+
+    pub fn set_predecessor(&mut self, predecessor: Option<Location>) {
+        self.predecessor = predecessor;
+    }
+
+    pub fn get_finger(&self, n: usize) -> Result<Location> {
+        self.validate_index(&self.finger, n)?;
+        let location = Location::option_to_result(&self.finger[n])?;
+        Ok(location)
+    }
+
+    pub fn set_finger(&mut self, n: usize, location: Option<Location>) -> Result<()> {
+        self.validate_index(&self.finger, n)?;
+        self.finger[n] = location;
+        Ok(())
+    }
+
+    pub fn get_finger_len(&self) -> usize {
+        self.finger.len()
+    }
+
+    pub fn get_finger_start_identifier(&self, n: usize) -> Result<BigUint> {
+        self.validate_index(&self.finger_start_identifier, n)?;
+        let identifier = self.finger_start_identifier[n].clone();
+        Ok(identifier)
     }
 
     pub fn closest_preceding_finger(&self, id: BigUint) -> Result<Location> {

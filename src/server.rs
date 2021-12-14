@@ -55,7 +55,6 @@ async fn start_core_loop(
             } 
         };
 
-        log::debug!("A new client connected.");
         tokio::spawn(async move {
             handle_socket_read(stream, output_buffer_size, node_list).await;
         });
@@ -72,7 +71,6 @@ async fn handle_socket_read(
         match stream.read_buf(&mut buf).await {
             Ok(n) => {
                 if n == 0 {
-                    log::debug!("Client disconnected.");
                     return;
                 }
 
@@ -120,7 +118,6 @@ async fn start_stabilizing_task(virtual_node_id: u8, node_list: Arc<NodeList>) {
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let node_list = node_list.clone();
-        log::info!("Staring task for node id: {}", virtual_node_id);
         match membership::stablize(virtual_node_id, node_list.clone()).await {
             Ok(()) => {
                 /* Happy case. Nothing to do. */
