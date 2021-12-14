@@ -2,6 +2,7 @@ use bytes::BytesMut;
 use num::BigUint;
 use std::sync::Arc;
 
+use crate::config::Config;
 use crate::location::Location;
 use crate::membership;
 use crate::node::NodeList;
@@ -18,6 +19,9 @@ pub enum Request {
         virtual_node_id: u8,
     },
     GetSuccessor {
+        virtual_node_id: u8,
+    },
+    Info {
         virtual_node_id: u8,
     },
     Join {
@@ -43,7 +47,11 @@ impl Request {
      * 
      * Param node_list is needed here to guard virtual_node_id.
      */
-    pub fn parse_from_buf(buf: &BytesMut, node_list: Arc<NodeList>) -> Result<(Self, bool)> {
+    pub fn parse_from_buf(
+        buf: &BytesMut,
+        node_list: Arc<NodeList>,
+        config: Arc<Config>,
+    ) -> Result<(Self, bool)> {
         let mut s = String::from_utf8(buf.to_vec())?;
 
         let mut is_human_client = false;
@@ -86,10 +94,17 @@ impl Request {
                     virtual_node_id,
                 }
             },
+            "info" => {
+                check_params_len(&arr, 2)?;
+                let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
+                Request::Info {
+                    virtual_node_id,
+                }
+            },
             "join" => {
                 check_params_len(&arr, 3)?;
                 let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
-                let location = Location::from_string(arr[2].to_string())?;
+                let location = Location::from_string(arr[2].to_string(), config)?;
                 Request::Join {
                     virtual_node_id,
                     location,
@@ -107,7 +122,7 @@ impl Request {
             "notify" => {
                 check_params_len(&arr, 3)?;
                 let virtual_node_id = parse_virtual_node_id(arr[1], node_list.clone())?;
-                let notifier = Location::from_string(arr[2].to_string())?;
+                let notifier = Location::from_string(arr[2].to_string(), config)?;
                 Request::Notify {
                     virtual_node_id,
                     notifier,
@@ -132,6 +147,9 @@ impl Request {
             },
             Request::GetSuccessor { virtual_node_id } => {
                 format!("GETSUCCESSOR {}", virtual_node_id)
+            },
+            Request::Info { virtual_node_id } => {
+                format!("INFO {}", virtual_node_id)
             },
             Request::Join { virtual_node_id, location } => {
                 format!("JOIN {} {}", virtual_node_id, location.to_string())
@@ -158,6 +176,9 @@ pub enum Response {
     GetSuccessor {
         location: Location,
     },
+    Info {
+        info: String,
+    },
     Join,
     Lookup {
         location: Location,
@@ -170,7 +191,7 @@ impl Response {
      * Parse request from buffer.
      * Param node_list is needed here to guard virtual_node_id.
      */
-    pub fn parse_from_buf(buf: &BytesMut) -> Result<Self> {
+    pub fn parse_from_buf(buf: &BytesMut, config: Arc<Config>) -> Result<Self> {
         let s = String::from_utf8(buf.to_vec())?;
         let arr: Vec<&str> = s.split(" ").collect();
 
@@ -191,23 +212,33 @@ impl Response {
         let response = match arr[1].to_lowercase().as_str() {
             "closestprecedingfinger" => {
                 check_params_len(&arr, 3)?;
-                let location = Location::from_string(arr[2].to_string())?;
+                let location = Location::from_string(arr[2].to_string(), config)?;
                 Response::ClosestPrecedingFinger {
                     location,
                 }
             },
             "getpredecessor" => {
                 check_params_len(&arr, 3)?;
-                let location = Location::from_string(arr[2].to_string())?;
+                let location = Location::from_string(arr[2].to_string(), config)?;
                 Response::GetPredecessor {
                     location,
                 }
             },
             "getsuccessor" => {
                 check_params_len(&arr, 3)?;
-                let location = Location::from_string(arr[2].to_string())?;
+                let location = Location::from_string(arr[2].to_string(), config)?;
                 Response::GetSuccessor {
                     location,
+                }
+            },
+            "info" => {
+                /* No need to check param number. */
+                let mut info = "".to_string();
+                for i in 2..arr.len() {
+                    info.push_str(arr[i]);
+                }
+                Response::Info {
+                    info,
                 }
             },
             "join" => {
@@ -216,7 +247,7 @@ impl Response {
             }
             "lookup" => {
                 check_params_len(&arr, 3)?;
-                let location = Location::from_string(arr[2].to_string())?;
+                let location = Location::from_string(arr[2].to_string(), config)?;
                 Response::Lookup {
                     location,
                 }
@@ -245,6 +276,9 @@ impl Response {
             Response::GetSuccessor { location } => {
                 format!("RES GETSUCCESSOR {}", location.to_string())
             },
+            Response::Info { info } => {
+                format!("RES INFO {}", info)
+            }
             Response::Join => {
                 format!("RES JOIN")
             },
@@ -305,7 +339,11 @@ fn parse_key(input: &str) -> Result<BigUint> {
     Ok(key)
 }
 
-async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<Response> {
+async fn execute_request(
+    request: Request,
+    node_list: Arc<NodeList>,
+    config: Arc<Config>,
+) -> Result<Response> {
     let response = match request {
         Request::ClosestPrecedingFinger { virtual_node_id, key } => {
             let location = {
@@ -334,8 +372,17 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
                 location,
             }
         },
+        Request::Info { virtual_node_id } => {
+            let info = {
+                let node = node_list.node_list[virtual_node_id as usize].lock().await;
+                node.get_info()
+            };
+            Response::Info {
+                info,
+            }
+        }
         Request::Join { virtual_node_id, location } => {
-            membership::join(virtual_node_id, location, node_list).await?;
+            membership::join(virtual_node_id, location, node_list, config).await?;
             Response::Join
         },
         Request::Lookup { virtual_node_id, key } => {
@@ -344,7 +391,7 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
                 node.own_location()
             };
 
-            let location = process::find_successor(&own_location, &key).await?;
+            let location = process::find_successor(&own_location, &key, config).await?;
             Response::Lookup {
                 location
             }
@@ -364,11 +411,20 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
 /*
  * Given network I/O buffer, parse the request, and execute it.
  */
-pub async fn process_request(buf: &BytesMut, node_list: Arc<NodeList>) -> Result<String> {
+pub async fn process_request(
+    buf: &BytesMut,
+    node_list: Arc<NodeList>,
+    config: Arc<Config>,
+) -> Result<String> {
     /* Parse request. */
-    let (request, is_human_client) = Request::parse_from_buf(buf, node_list.clone())?;
+    let (request, is_human_client) = Request::parse_from_buf(
+        buf,
+        node_list.clone(),
+        config.clone()
+    )?;
+
     /* Execute request. */
-    let response = execute_request(request, node_list.clone()).await?;
+    let response = execute_request(request, node_list.clone(), config.clone()).await?;
 
     /* Serialize the response to be sent back to client. */
     let string = response.serialize(is_human_client)?;

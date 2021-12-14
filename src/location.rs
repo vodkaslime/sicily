@@ -1,6 +1,7 @@
 use num::bigint::BigUint;
 use std::net::{ IpAddr, SocketAddr };
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::arithmetic;
 use crate::config::Config;
@@ -15,13 +16,11 @@ pub struct Location {
 }
 
 impl Location {
-    pub fn new(config: &Config, virtual_node_id: u8) -> Self {
+    pub fn new(config: Arc<Config>, virtual_node_id: u8) -> Self {
         let ip = config.host.clone();
         let port = config.port;
         let id_input = format!("{}:{}:{}", &ip, port, virtual_node_id);
-        let base = BigUint::from_bytes_be(&[2]);
-        let divisor = base.pow(config.id_bits as u32);
-        let identifier = arithmetic::hash(&id_input) % divisor;
+        let identifier = arithmetic::compute_identifier(config.id_bits as u32, &id_input);
         return Self {
             ip,
             port,
@@ -30,7 +29,7 @@ impl Location {
         }
     }
 
-    pub fn from_string(id_input: String) -> Result<Self> {
+    pub fn from_string(id_input: String, config: Arc<Config>) -> Result<Self> {
         let arr: Vec<&str> = id_input.split(":").collect();
         if arr.len() < 2 || arr.len() > 3 {
             return Err("Invalid number of params for making a location.".into());
@@ -45,7 +44,7 @@ impl Location {
         } else {
             virtual_node_id = arr[2].parse::<u8>()?;
         }
-        let identifier = arithmetic::hash(&id_input);
+        let identifier = arithmetic::compute_identifier(config.id_bits as u32, &id_input);
         Ok(Self {
             ip,
             port,
@@ -60,6 +59,16 @@ impl Location {
             self.ip,
             self.port,
             self.virtual_node_id
+        );
+    }
+
+    fn to_info(&self) -> String {
+        return format!(
+            "{}:{}:{}\r\n{}",
+            self.ip,
+            self.port,
+            self.virtual_node_id,
+            self.identifier
         );
     }
 
@@ -80,6 +89,22 @@ impl Location {
             },
             None => {
                 return Err("None error encoutered while trying to get something from Option.".into());
+            }
+        }
+    }
+
+    /*
+     * Convenience function to format and return info string of an Option<Location>.
+     * If Some(Location) then format and return the location.
+     * If None the print "None".
+     */
+    pub fn print_info_from_option(option: &Option<Self>) -> String {
+        match option {
+            Some(location) => {
+                return location.to_info();
+            },
+            None => {
+                return "None".to_string();
             }
         }
     }

@@ -1,8 +1,10 @@
 use bytes::BytesMut;
+use std::sync::Arc;
 use tokio::io::{ AsyncReadExt, AsyncWriteExt };
 use tokio::net::{ TcpStream };
 
 use crate::command::{ Request, Response };
+use crate::config::Config;
 use crate::constants::*;
 use crate::location::Location;
 use crate::utils::Result;
@@ -31,12 +33,12 @@ impl Client {
         Ok(())
     }
 
-    pub async fn receive(&mut self) -> Result<Response> {
+    pub async fn receive(&mut self, config: Arc<Config>) -> Result<Response> {
         let n = self.socket.read_buf(&mut self.buffer).await?;
         if n == 0 {
             return Err("[Client side] Error receiving response. Server side closed the connection.".into());
         }
-        let response = Response::parse_from_buf(&self.buffer)?;
+        let response = Response::parse_from_buf(&self.buffer, config)?;
         Ok(response)
     }
 }

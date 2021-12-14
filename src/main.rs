@@ -10,7 +10,8 @@ use sicily::server;
 
 fn main() -> utils::Result<()>{
     pretty_env_logger::init();
-    let config = config::parse_params()?;
-    let node_list = Arc::new(node::NodeList::new(&config));
-    server::start(&config, node_list)
+    let config = Arc::new(config::parse_params()?);
+    let node_list = Arc::new(node::NodeList::new(config.clone()));
+    server::start(node_list, config)?;
+    Ok(())
 }

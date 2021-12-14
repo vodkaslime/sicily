@@ -4,7 +4,7 @@ use sha2::{ Sha256, Digest };
 /*
  * Given a string, hash it with SHA256 into a big unit.
  */
-pub fn hash(input: &String) -> BigUint {
+fn hash(input: &String) -> BigUint {
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
     let arr = hasher.finalize();
@@ -45,6 +45,14 @@ pub fn is_in_range(
         /* When left == right, we assume they encompass the entire ring. */
         true
     }
+}
+
+pub fn compute_identifier(bits: u32, input: &String) -> BigUint {
+    let base = BigUint::from_bytes_be(&[2]);
+    let divisor = base.pow(bits);
+    let hash = hash(input);
+    let identifier = hash % divisor;
+    identifier
 }
 
 #[cfg(test)]
