@@ -110,4 +110,3 @@ async fn find_closest_preceding_finger(
     };
     Ok(res_location)
 }
-

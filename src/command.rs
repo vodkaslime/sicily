@@ -327,7 +327,7 @@ fn parse_virtual_node_id(input: &str, node_list: Arc<NodeList>) -> Result<u8> {
  * Convenience function to parse key(id) as a big uint.
  */
 fn parse_key(input: &str) -> Result<BigUint> {
-    let key = match BigUint::parse_bytes(input.as_bytes(), 16) {
+    let key = match BigUint::parse_bytes(input.as_bytes(), 10) {
         Some(key) => { key },
         None => {
             return Err(
