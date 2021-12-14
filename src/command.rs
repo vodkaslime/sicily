@@ -38,13 +38,18 @@ impl Request {
 
     /*
      * Parse request from buffer.
+     * Return parsed request, and whether this request is initiated by a human client,
+     * which ends with "\r\n".
+     * 
      * Param node_list is needed here to guard virtual_node_id.
      */
-    pub fn parse_from_buf(buf: &BytesMut, node_list: Arc<NodeList>) -> Result<Self> {
+    pub fn parse_from_buf(buf: &BytesMut, node_list: Arc<NodeList>) -> Result<(Self, bool)> {
         let mut s = String::from_utf8(buf.to_vec())?;
 
+        let mut is_human_client = false;
         /* Remove trailing "\r\n" if the command if input by user. */
         if s.ends_with("\r\n") {
+            is_human_client = true;
             s = s[0..s.len()-2].to_string();
         }
         let arr: Vec<&str> = s.split(" ").collect();
@@ -114,7 +119,7 @@ impl Request {
                     .into());
             }
         };
-        Ok(command)
+        Ok((command, is_human_client))
     }
 
     pub fn serialize(&self) -> Result<String> {
@@ -229,8 +234,8 @@ impl Response {
         Ok(response)
     }
 
-    pub fn serialize(&self) -> Result<String> {
-        let res = match self {
+    pub fn serialize(&self, is_human_client: bool) -> Result<String> {
+        let mut res = match self {
             Response::ClosestPrecedingFinger { location } => {
                 format!("RES CLOSESTPRECEDINGFINGER {}", location.to_string())
             },
@@ -250,6 +255,9 @@ impl Response {
                 format!("RES NOTIFY")
             },
         };
+        if is_human_client {
+            res.push_str("\r\n");
+        }
         Ok(res)
     }
 }
@@ -358,11 +366,11 @@ async fn execute_request(request: Request, node_list: Arc<NodeList>) -> Result<R
  */
 pub async fn process_request(buf: &BytesMut, node_list: Arc<NodeList>) -> Result<String> {
     /* Parse request. */
-    let request = Request::parse_from_buf(buf, node_list.clone())?;
+    let (request, is_human_client) = Request::parse_from_buf(buf, node_list.clone())?;
     /* Execute request. */
     let response = execute_request(request, node_list.clone()).await?;
 
     /* Serialize the response to be sent back to client. */
-    let string = response.serialize()?;
+    let string = response.serialize(is_human_client)?;
     Ok(string)
 }
