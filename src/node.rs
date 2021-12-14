@@ -130,28 +130,26 @@ impl Node {
      */
     pub fn get_info(&self) -> String {
         let mut info = "\r\n".to_string();
-        /* Predecessor */
+        /* My own location. */
+        let own_location_string = self.location.to_info();
+        info.push_str(&format!("My own location: {}\r\n", own_location_string));
+
+        /* Predecessor. */
         let predecessor_string = Location::print_info_from_option(&self.predecessor);
         info.push_str(&format!("Predecessor: {}\r\n", predecessor_string));
 
-        /* Successor */
+        /* Successor. */
         let successor_string = Location::print_info_from_option(&self.finger[0]);
         info.push_str(&format!("Successor: {}\r\n", successor_string));
 
-        /* Fingers */
+        /* Fingers and start index. */
         info.push_str(&format!("The finger list len is: {}\r\n", self.finger.len()));
         for i in 0..self.finger.len() {
             info.push_str(&format!("Finger {}: ", i));
             let finger_string = Location::print_info_from_option(&self.finger[i]);
-            info.push_str(&format!("{}\r\n", finger_string));
-        }
-
-        /* Finger start index */
-        info.push_str(&format!("The finger start identifier list len is: {}\r\n", self.finger_start_identifier.len()));
-        for i in 0..self.finger_start_identifier.len() {
-            info.push_str(&format!("Finger {}: ", i));
-            let identifier = &self.finger_start_identifier[i];
-            info.push_str(&format!("{}\r\n", identifier));
+            let start_identifier = &self.finger_start_identifier[i];
+            info.push_str(&format!("{} --> identifier\r\n", finger_string));
+            info.push_str(&format!("{} --> start index\r\n", start_identifier));
         }
         
         info

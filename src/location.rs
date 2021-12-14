@@ -62,7 +62,7 @@ impl Location {
         );
     }
 
-    fn to_info(&self) -> String {
+    pub fn to_info(&self) -> String {
         return format!(
             "{}:{}:{}\r\n{}",
             self.ip,
