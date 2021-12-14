@@ -29,7 +29,6 @@ impl Node {
     ) -> Self {
         let location = Location::new(config, virtual_node_id);
         let predecessor = Some(location.clone());
-        let successor = Some(location.clone());
 
         let mut finger: Vec<Option<Location>> = Vec::new();
         let mut finger_start_identifier: Vec<BigUint> = Vec::new();
@@ -52,13 +51,6 @@ impl Node {
             finger,
             finger_start_identifier,
         }
-    }
-
-    fn validate_index<T>(&self, vec: &Vec<T>, n: usize) -> Result<()> {
-        if n >= self.finger.len() {
-            return Err("Error retrieving finger. Index overflow.".into());
-        }
-        Ok(())
     }
 
     pub fn own_location(&self) -> Location {
@@ -85,13 +77,13 @@ impl Node {
     }
 
     pub fn get_finger(&self, n: usize) -> Result<Location> {
-        self.validate_index(&self.finger, n)?;
+        validate_index(&self.finger, n)?;
         let location = Location::option_to_result(&self.finger[n])?;
         Ok(location)
     }
 
     pub fn set_finger(&mut self, n: usize, location: Option<Location>) -> Result<()> {
-        self.validate_index(&self.finger, n)?;
+        validate_index(&self.finger, n)?;
         self.finger[n] = location;
         Ok(())
     }
@@ -101,7 +93,7 @@ impl Node {
     }
 
     pub fn get_finger_start_identifier(&self, n: usize) -> Result<BigUint> {
-        self.validate_index(&self.finger_start_identifier, n)?;
+        validate_index(&self.finger_start_identifier, n)?;
         let identifier = self.finger_start_identifier[n].clone();
         Ok(identifier)
     }
@@ -154,4 +146,11 @@ impl NodeList {
             node_list,
         }
     }
+}
+
+fn validate_index<T>(vec: &Vec<T>, n: usize) -> Result<()> {
+    if n >= vec.len() {
+        return Err("Error retrieving finger. Index overflow.".into());
+    }
+    Ok(())
 }
