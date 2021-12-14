@@ -27,7 +27,7 @@ pub async fn start(node_list: Arc<NodeList>, config: Arc<Config>) -> Result<()> 
     });
 
     let config_ptr = config.clone();
-    let mut stabilizing_handles = start_stabilizing_tasks(config_ptr, node_list).await;
+    let mut stabilizing_handles = start_stabilizing_tasks(node_list, config_ptr).await;
     handle.await?;
     for i in 0..stabilizing_handles.len() {
         let handler = &mut stabilizing_handles[i];
@@ -122,7 +122,7 @@ async fn write_to_socket(stream: &mut TcpStream, string: String) {
     }
 }
 
-async fn start_stabilizing_tasks(config: Arc<Config>, node_list: Arc<NodeList>) -> Vec<JoinHandle<()>> {
+async fn start_stabilizing_tasks(node_list: Arc<NodeList>, config: Arc<Config>) -> Vec<JoinHandle<()>> {
     let mut vec: Vec<JoinHandle<()>> = Vec::new();
     for i in 0..config.virtual_node_number {
         let config = config.clone();
@@ -141,7 +141,7 @@ async fn start_stabilizing_task(
     config: Arc<Config>,
 ) {
     loop {
-        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(config.stabilize_frequency)).await;
         let node_list = node_list.clone();
         match membership::stablize(virtual_node_id, node_list.clone(), config.clone()).await {
             Ok(()) => {

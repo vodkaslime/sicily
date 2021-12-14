@@ -38,6 +38,13 @@ struct Params {
     pub output_buffer_size: Option<usize>,
 
     #[structopt(
+        name = "stabilize frequency",
+        long = "--stabilize-frequency",
+        about = "Stabilize frequency time in milliseconds."
+    )]
+    pub stabilize_frequency: Option<u64>,
+
+    #[structopt(
         name = "Identifier bits",
         long = "--id-bits",
         about = "Identifier bits. Must be an integer between 8 to 255."
@@ -60,6 +67,7 @@ pub struct Config {
     pub port: u16,
     pub host: String,
     pub output_buffer_size: usize,
+    pub stabilize_frequency: u64,
     pub id_bits: u8,
     pub virtual_node_number: u8,
 }
@@ -95,7 +103,13 @@ pub fn parse_params() -> Result<Config> {
             }
             output_buffer_size
         },
-        None => OUTPUT_BUFFER_SIZE
+        None => OUTPUT_BUFFER_SIZE,
+    };
+
+    /* Parse stabilize frequency. */
+    let stabilize_frequency = match params.stabilize_frequency {
+        Some(stabilize_frequency) => stabilize_frequency,
+        None => STABILIZE_FREQUENCY,
     };
 
     /* Parse host identifier from input.
@@ -113,7 +127,7 @@ pub fn parse_params() -> Result<Config> {
             }
             id_bits
         }
-        None => ID_BITS
+        None => ID_BITS,
     };
 
     /* Parse virtual node number. */
@@ -127,12 +141,13 @@ pub fn parse_params() -> Result<Config> {
             }
             virtual_node_number
         },
-        None => VIRTUAL_NODE_NUMBER
+        None => VIRTUAL_NODE_NUMBER,
     };
     let config = Config {
         port,
         host,
         output_buffer_size,
+        stabilize_frequency,
         id_bits,
         virtual_node_number,
     };
