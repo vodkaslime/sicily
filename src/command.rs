@@ -171,7 +171,7 @@ pub enum Response {
         location: Location,
     },
     GetPredecessor {
-        location: Location,
+        location: Option<Location>,
     },
     GetSuccessor {
         location: Location,
@@ -219,9 +219,15 @@ impl Response {
             },
             "getpredecessor" => {
                 check_params_len(&arr, 3)?;
-                let location = Location::from_string(arr[2].to_string(), config)?;
-                Response::GetPredecessor {
-                    location,
+                if arr[2].to_lowercase() == "none" {
+                    Response::GetPredecessor {
+                        location: None,
+                    }
+                } else {
+                    let location = Location::from_string(arr[2].to_string(), config)?;
+                    Response::GetPredecessor {
+                        location: Some(location),
+                    }
                 }
             },
             "getsuccessor" => {
@@ -271,7 +277,10 @@ impl Response {
                 format!("RES CLOSESTPRECEDINGFINGER {}", location.to_string())
             },
             Response::GetPredecessor{ location } => {
-                format!("RES GETPREDECESSOR {}", location.to_string())
+                match location {
+                    Some(location) => format!("RES GETPREDECESSOR {}", location.to_string()),
+                    None => format!("RES GETPREDECESSOR NONE"),
+                }
             },
             Response::GetSuccessor { location } => {
                 format!("RES GETSUCCESSOR {}", location.to_string())
@@ -357,7 +366,10 @@ async fn execute_request(
         Request::GetPredecessor { virtual_node_id } => {
             let location = {
                 let node = node_list.node_list[virtual_node_id as usize].lock().await;
-                node.get_predecessor()?
+                match node.get_predecessor() {
+                    Ok(location) => Some(location),
+                    Err(_) => None,
+                }
             };
             Response::GetPredecessor {
                 location,

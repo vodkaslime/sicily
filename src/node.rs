@@ -80,7 +80,13 @@ impl Node {
      * Get the location of predecessor.
      */
     pub fn get_predecessor(&self) -> Result<Location> {
-        let predecessor = Location::option_to_result(&self.predecessor)?;
+        let predecessor = match Location::option_to_result(&self.predecessor) {
+            Ok(predecessor) => predecessor,
+            Err(e) => {
+                log::error!("Trying to get predecessor at node {}", self.location.to_string());
+                return Err(e);
+            }
+        };
         Ok(predecessor)
     }
 

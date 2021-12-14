@@ -65,7 +65,7 @@ async fn get_successor(location: &Location, config: Arc<Config>) -> Result<Locat
 /*
  * Find predecessor node of a node at location.
  */
-pub async fn get_predecessor(location: &Location, config: Arc<Config>) -> Result<Location> {
+pub async fn get_predecessor(location: &Location, config: Arc<Config>) -> Result<Option<Location>> {
     let request = Request::GetPredecessor {
         virtual_node_id: location.virtual_node_id,
     };
