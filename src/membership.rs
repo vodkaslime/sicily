@@ -71,14 +71,25 @@ pub async fn stablize(
     };
 
     let option = process::get_predecessor(&successor, config.clone()).await?;
-    let predecessor_of_successor = match option {
-        Some(location) => location,
+    match option {
+        Some(location) => {
+            let predecessor_of_successor = location;
+            if arithmetic::is_in_range(
+                &predecessor_of_successor.identifier,
+                (&local_location.identifier, false),
+                (&successor.identifier, false)) {
+                {
+                    let mut node = node_list.node_list[virtual_node_id as usize].lock().await;
+                    node.set_successor(Some(predecessor_of_successor.clone()));
+                }
+                successor = predecessor_of_successor.clone();
+            }
+        },
         None => {
             /* It's OK to have a None response here when trying to get a successor node's predecessor.
              * It can be due to:
              * - The successor node is initially already in a cluster.
-             * - Its predecessor (the caller node of this function) keeps getting doing the get_predecessor()
-             *   to it.
+             * - Its predecessor (the caller node of this function) keeps doing the get_predecessor() to it.
              * - At the very moment, the successor node tries to join some other node, maybe in another cluster.
              * - Thus the predecessor field of the successor node is marked as None.
              * - Therefore we get into this scenario. */
@@ -86,17 +97,6 @@ pub async fn stablize(
         }
     };
 
-    if arithmetic::is_in_range(
-        &predecessor_of_successor.identifier,
-        (&local_location.identifier, false),
-        (&successor.identifier, false)) {
-            {
-                let mut node = node_list.node_list[virtual_node_id as usize].lock().await;
-                node.set_successor(Some(predecessor_of_successor.clone()));
-            }
-            successor = predecessor_of_successor.clone();
-        }
-    
     notify(
         local_location,
         successor,
