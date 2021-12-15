@@ -64,7 +64,7 @@ impl Location {
 
     pub fn to_info(&self) -> String {
         return format!(
-            "{}:{}:{}\r\n{}",
+            "{}:{}:{}\r\n{} --> identifier",
             self.ip,
             self.port,
             self.virtual_node_id,

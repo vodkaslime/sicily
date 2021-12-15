@@ -58,7 +58,7 @@ pub async fn stablize(
         Some(location) => location,
         None => {
             /* It's OK to have a None response here when trying to get a successor node's predecessor.
-             * Because it can be because:
+             * It can be due to:
              * - The successor node is initially already in a cluster.
              * - Its predecessor (the caller node of this function) keeps getting doing the get_predecessor()
              *   to it.

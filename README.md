@@ -55,3 +55,60 @@ If successful, you will receive a response:
 RES JOIN
 ```
 And the cluster will later communicate and stabilize in the async manner since we have stabilization working in the background.
+
+### Info
+Connect to service and do:
+
+```
+INFO <virtual_node_id>
+```
+
+for example:
+
+```
+INFO 0
+```
+
+This triggers an info request to the target node at `virtual_node_id`.
+
+If successful, you will receive a response:
+```
+RES INFO
+<detailed info about the node>
+```
+
+for example:
+```
+RES INFO 
+My own location: 127.0.0.1:8820:0
+81 --> identifier
+Predecessor: 127.0.0.1:8820:1
+18 --> identifier
+Successor: 127.0.0.1:8820:1
+18 --> identifier
+The finger list len is: 8
+Finger 0: 127.0.0.1:8820:1
+18 --> identifier
+82 --> start index
+Finger 1: 127.0.0.1:8820:1
+18 --> identifier
+83 --> start index
+Finger 2: 127.0.0.1:8820:1
+18 --> identifier
+85 --> start index
+Finger 3: 127.0.0.1:8820:1
+18 --> identifier
+89 --> start index
+Finger 4: 127.0.0.1:8820:1
+18 --> identifier
+97 --> start index
+Finger 5: 127.0.0.1:8820:1
+18 --> identifier
+113 --> start index
+Finger 6: 127.0.0.1:8820:1
+18 --> identifier
+145 --> start index
+Finger 7: 127.0.0.1:8820:1
+18 --> identifier
+209 --> start index
+```

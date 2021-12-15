@@ -148,7 +148,7 @@ impl Node {
             info.push_str(&format!("Finger {}: ", i));
             let finger_string = Location::print_info_from_option(&self.finger[i]);
             let start_identifier = &self.finger_start_identifier[i];
-            info.push_str(&format!("{} --> identifier\r\n", finger_string));
+            info.push_str(&format!("{}\r\n", finger_string));
             info.push_str(&format!("{} --> start index\r\n", start_identifier));
         }
         
